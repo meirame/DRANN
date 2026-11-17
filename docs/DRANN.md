@@ -1,6 +1,6 @@
 # Especificación de DRANN, primera versión
 
-Estado: diseño documentado; todavía no se ha implementado la DRANN. Esta especificación recoge las decisiones de la conversación hasta el 17 de noviembre de 2026 y distingue las propuestas no confirmadas.
+Estado: primera implementación en `DRANN.cpp`, con pruebas en `tests/DRANN_tests.cpp`. Esta especificación recoge las decisiones de la conversación hasta el 17 de noviembre de 2026 y distingue acuerdos de elecciones de implementación. Los resultados iniciales están en [experiment-v1.md](experiment-v1.md).
 
 ## 1. Propósito y alcance
 
@@ -180,12 +180,12 @@ Después de cada época, volver a evaluar los ocho ejemplos de entrenamiento y l
 
 Registrar las curvas para observar posibles indicios de sobreajuste. Dos ejemplos de validación no permiten determinar con precisión cuándo deja de generalizar. Mantener las cien épocas; no se ha acordado parada temprana ni reducción automática de `lr`.
 
-Propuesta de temperaturas todavía no confirmada expresamente:
+Temperaturas utilizadas como elección inicial de implementación, a partir de la propuesta de la conversación:
 
 - Entrenamiento Celsius: `{-40, -20, 0, 20, 40, 60, 80, 100}`.
 - Validación Celsius: `{10, 70}`.
 
-El usuario confirmó la normalización, pero no seleccionó explícitamente esas diez temperaturas. También siguen sin fijarse la semilla y si se barajan los ejemplos entre épocas. Documentar lo que se elija al concretar el experimento.
+El usuario confirmó la normalización, pero no seleccionó explícitamente esas diez temperaturas. Se utilizan para concretar el experimento autorizado. La implementación emplea semilla `42` y orden fijo, sin barajado. Son elecciones reproducibles, visibles en `main()`, no requisitos matemáticos del modelo.
 
 ## 8. Referencia de implementación y estado del trabajo
 
@@ -193,9 +193,11 @@ La referencia estética y estructural es [XOR.cpp](reference/XOR.cpp), proporcio
 
 Se busca una implementación manual legible: `struct`, vectores, cachés, bucles, funciones de pérdida y derivadas explícitas, métodos separados y configuración sencilla en `main()`. Las instrucciones de estilo y comprobación están en [AGENTS.md](../AGENTS.md).
 
-La preferencia inicial es comenzar con un único `.cpp`. Formato de resultados, versión mínima de C++, sistema de compilación y semilla son elecciones de implementación todavía no fijadas. No hay aún ejecutable, métricas de aprendizaje ni pruebas realizadas sobre una implementación DRANN.
+La implementación comienza con un único `.cpp` de producción y utiliza C++17 y la biblioteca estándar. Se compila directamente con `g++`, sin un sistema de construcción adicional. El historial se guarda en `training_history.csv`: evaluación inicial (época 0) y cien evaluaciones posteriores. La salida por terminal muestra los puntos individuales del cognifenómeno primitivo de validación en Fahrenheit; no introduce un promedio como nueva definición de predicción.
 
-Antes de implementar conviene precisar también el alcance de la anulación en los pesos de entrada: la regla irreversible se confirmó explícitamente para las conexiones internas simétricas. No extenderla silenciosamente a los pesos de entrada ni convertirla en un recorte permanente de todos los parámetros.
+La regla irreversible se confirmó explícitamente para las conexiones internas simétricas. En esta implementación no se extiende a los pesos de entrada: son parámetros ordinarios del gradiente y pueden cambiar de signo. Esta decisión de alcance está documentada para que no se confunda con un recorte permanente de todos los parámetros.
+
+El programa no define una recuperación para el aislamiento total. Si encuentra un cognifenómeno vacío, termina con un error explícito en lugar de dividir entre cero, devolver un acierto o inventar una pérdida. Se comprueba esta frontera sin añadir un tratamiento matemático al modelo.
 
 ## 9. Propuestas reemplazadas o descartadas para v1
 

@@ -3,7 +3,7 @@
 ## Contexto y alcance
 
 - Leer `docs/DRANN.md` antes de implementar o modificar el modelo. Distingue acuerdos, propuestas y detalles pendientes.
-- La tarea que introduce estos archivos es conservar el contexto del diseño; no introduce aún una implementación de la DRANN. Una solicitud posterior de implementación autoriza avanzar dentro del alcance acordado, sin añadir una aprobación adicional por este archivo.
+- La primera implementación está en `DRANN.cpp`; `tests/DRANN_tests.cpp` incluye ese archivo con `DRANN_NO_MAIN` para comprobar el mismo núcleo sin duplicarlo. Leer también el README y `docs/experiment-v1.md` para compilar y conocer los resultados observados. Las solicitudes claras de implementación autorizan avanzar dentro del alcance acordado, sin añadir una aprobación adicional por este archivo.
 - El núcleo se implementará desde cero en C++, incluidos forward, backward y actualización de parámetros. No usar PyTorch, LibTorch ni otro framework de redes neuronales o autodiferenciación.
 - Primero obtener un ejecutable de consola. Godot es secundario y se integrará después; no añadir ahora GDExtension ni dependencias de Godot.
 - No introducir cambios matemáticos de forma implícita. Documentar las decisiones nuevas y distinguirlas de lo que ya pidió el usuario. Resolver las elecciones rutinarias de implementación con criterio, sin convertirlas en permisos innecesarios.
