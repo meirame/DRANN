@@ -217,6 +217,8 @@ El programa no define una recuperación para el aislamiento total. Si encuentra 
 
 Repositorio privado: `https://github.com/meirame/DRANN`. Carpeta preparada por el usuario: `/home/luis/personal/DRANN`.
 
-Este chat remoto no tiene acceso directo a esa carpeta. El flujo acordado es trabajar aquí, publicar cambios en GitHub mediante ramas y pull requests, y descargar la rama correspondiente en el ordenador local. Un `pull` en `main` no incorpora cambios de una rama todavía no fusionada.
+La preferencia actual del usuario es trabajar y ejecutar la DRANN en su ordenador local, y subir después los cambios y resultados a GitHub mediante ramas y pull requests. La guía está en [LOCAL.md](LOCAL.md). El código actual está en `feature/drann-v1`; un `pull` en `main` no incorpora cambios de una rama todavía no fusionada.
+
+Este chat remoto no tiene acceso directo a la carpeta local ni puede cambiar de equipo de ejecución mediante las herramientas disponibles. Para completar el traslado hay que abrir esa carpeta como proyecto local en Codex y retomar allí el trabajo con estos documentos.
 
 Estos archivos preservan el contexto del proyecto, no una copia literal ni una sincronización del historial de conversación. Al retomar desde otro chat, leer esta especificación y `AGENTS.md`, revisar el estado real del repositorio y continuar desde lo ya implementado.

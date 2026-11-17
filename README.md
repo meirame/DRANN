@@ -120,3 +120,5 @@ La conversión todavía no es exacta. Dos ejemplos de validación y una tarea li
 - [Instrucciones de trabajo y estilo](AGENTS.md).
 - [Referencia de estilo original: XOR.cpp](docs/reference/XOR.cpp). Este archivo es una referencia del usuario, no la implementación de la DRANN.
 - [Registro del primer experimento](docs/experiment-v1.md).
+- [Retomar el trabajo local y publicar resultados](docs/LOCAL.md).
+- [Historial verificado de 1000 épocas](results/celsius_fahrenheit_seed42_1000/README.md).

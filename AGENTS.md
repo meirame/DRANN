@@ -45,5 +45,7 @@ La referencia del usuario es `docs/reference/XOR.cpp`, conservada sin modificaci
 
 - Actualizar la especificación cuando el usuario cambie el diseño. No reintroducir propuestas descartadas como si siguieran aprobadas.
 - El repositorio privado es `meirame/DRANN`. Trabajar mediante ramas y pull requests según el flujo acordado; no fusionar sin una instrucción que lo autorice.
+- La preferencia actual del usuario es desarrollar y ejecutar el proyecto localmente, y publicar después los cambios y resultados en GitHub. Leer `docs/LOCAL.md` al retomar desde un chat local.
 - La carpeta local del usuario es `/home/luis/personal/DRANN`. Un chat remoto puede ejecutarse en `/workspace`; no fingir acceso al disco local ni crear esa ruta aquí como sustituto.
 - Git sincroniza archivos, no el historial literal de los chats. Estos documentos sirven como contexto portable.
+- Guardar cada experimento que se quiera publicar en una carpeta propia de `results/`, con su historial y metadatos. Distinguir los resultados obtenidos localmente de la referencia verificada antes del traslado. Añadir al commit solo los archivos pertinentes y conservar las ejecuciones previas.
