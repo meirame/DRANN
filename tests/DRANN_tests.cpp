@@ -2,6 +2,9 @@
 #include "../DRANN.cpp"
 
 #include <algorithm>
+#include <cstdio>
+#include <iterator>
+#include <sstream>
 
 void require(bool condition, const std::string &message) {
   if (!condition)
@@ -280,6 +283,70 @@ void testBackwardAndEvaluation() {
   std::cout << "Backward: " << checked << " derivadas comprobadas por diferencias finitas.\n";
 }
 
+void testTrainingNotifications() {
+  std::vector<double> X = {-0.4, 0.0, 0.4, 0.8};
+  std::vector<double> Y = {-0.4, 0.32, 1.04, 1.76};
+  std::vector<double> Xvalidation = {0.1, 0.7}, Yvalidation = {0.5, 1.58};
+  DRANN plain(5, 0.005), notified(5, 0.005), cancelled(5, 0.005), shortRun(5, 0.005);
+  plain.initWeights(42);
+  notified.initWeights(42);
+  cancelled.initWeights(42);
+  shortRun.initWeights(42);
+
+  // Redirigir solo los mensajes de este experimento; restaurar incluso al fallar.
+  struct SilentOutput {
+    std::ostringstream log;
+    std::streambuf *original;
+    SilentOutput() : original(std::cout.rdbuf(log.rdbuf())) {}
+    ~SilentOutput() { std::cout.rdbuf(original); }
+  } silent;
+
+  const std::string plainPath = "drann_test_plain.csv";
+  const std::string notifiedPath = "drann_test_notified.csv";
+  const std::string cancelledPath = "drann_test_cancelled.csv";
+  const std::string shortPath = "drann_test_short.csv";
+  int plainEpochs = plain.train(X, Y, Xvalidation, Yvalidation, 8, plainPath);
+  std::vector<drannEpoch> records;
+  int notifiedEpochs = notified.train(
+      X, Y, Xvalidation, Yvalidation, 8, notifiedPath,
+      [&](const drannEpoch &epoch) {
+        require(epoch.e == static_cast<int>(records.size()),
+                "Notificaciones duplicadas o fuera de orden.");
+        require(std::isfinite(epoch.training.loss) && std::isfinite(epoch.validation.loss),
+                "La interfaz debe recibir métricas finitas.");
+        records.push_back(epoch);
+        return true;
+      });
+  require(plainEpochs == 8 && notifiedEpochs == 8 && records.size() == 9,
+          "Se debe notificar el estado inicial y cada época completada.");
+  auto readFile = [](const std::string &path) {
+    std::ifstream file(path);
+    return std::string(std::istreambuf_iterator<char>(file),
+                       std::istreambuf_iterator<char>());
+  };
+  require(readFile(plainPath) == readFile(notifiedPath),
+          "Notificar a la interfaz cambió el historial numérico.");
+
+  int completed = cancelled.train(
+      X, Y, Xvalidation, Yvalidation, 8, cancelledPath,
+      [](const drannEpoch &epoch) { return epoch.e < 3; });
+  shortRun.train(X, Y, Xvalidation, Yvalidation, 3, shortPath);
+  require(completed == 3 && readFile(cancelledPath) == readFile(shortPath),
+          "Cerrar la interfaz debe detener las épocas en el punto notificado.");
+  require(cancelled.inputWeights == shortRun.inputWeights &&
+              cancelled.bias == shortRun.bias,
+          "Se entrenaron ejemplos después de cancelar.");
+  for (std::size_t k = 0; k < cancelled.weights.size(); k++) {
+    require(cancelled.weights[k].w == shortRun.weights[k].w &&
+                cancelled.weights[k].active == shortRun.weights[k].active,
+            "La cancelación alteró las conexiones.");
+  }
+  std::remove(plainPath.c_str());
+  std::remove(notifiedPath.c_str());
+  std::remove(cancelledPath.c_str());
+  std::remove(shortPath.c_str());
+}
+
 int main() {
   try {
     testSequentialPropagation();
@@ -287,6 +354,7 @@ int main() {
     testWaitingAndOvertaking();
     testIrreversiblePruning();
     testBackwardAndEvaluation();
+    testTrainingNotifications();
     std::cout << "Todas las comprobaciones de DRANN han pasado.\n";
     return 0;
   } catch (const std::exception &error) {

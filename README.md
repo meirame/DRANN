@@ -20,41 +20,65 @@ El programa ejecuta 100 épocas con 5 neuronas y `lr = 0.005`. Genera `training_
 
 Al terminar muestra el cognifenómeno primitivo completo de los dos ejemplos de validación, desnormalizado a Fahrenheit. No sustituye la nube por una neurona de salida ni por un promedio para calcular la pérdida.
 
-## Ejecutar con gráfica automática
+## Gráfica nativa en tiempo real (C++)
 
-`run_drann.sh` compila el C++ actual, ejecuta el entrenamiento y abre una ventana de Matplotlib con las pérdidas de entrenamiento y validación por época. Usa la configuración que tengas en `main()`, incluidas tus modificaciones locales a 1000 épocas. No modifica `DRANN.cpp`.
+`run_drann.sh` compila y abre `drann_gui`, con una ventana de ImPlot + Dear ImGui + GLFW/OpenGL. Al completar cada época se añade un punto a las curvas de entrenamiento y validación. No necesita Python ni espera al final del entrenamiento para dibujar.
 
-Instala una vez el entorno de gráficas:
-
-```bash
-python3 -m venv .venv
-.venv/bin/python -m pip install -r requirements-plot.txt
-```
-
-Para entrenar y mostrar la gráfica:
+En Debian/Ubuntu instala las dependencias de compilación:
 
 ```bash
-DRANN_PYTHON=.venv/bin/python ./run_drann.sh
+sudo apt install build-essential cmake libglfw3-dev libgl1-mesa-dev
 ```
 
-Si tu `python3` ya tiene Matplotlib, basta con `./run_drann.sh`. La ventana permite ampliar, desplazar y guardar la figura mediante la barra de Matplotlib; el programa también guarda `training_history.png` automáticamente. La imagen y el CSV se reemplazan en cada ejecución. La ventana se abre al terminar el entrenamiento, no durante las épocas.
+Se necesita CMake 3.20 o posterior. La primera configuración descarga las versiones fijadas de Dear ImGui (`v1.91.9b`) e ImPlot (`v0.17`) desde sus repositorios oficiales y verifica sus hashes SHA-256. Las siguientes compilaciones reutilizan la descarga.
 
-Se necesita una sesión gráfica y un backend interactivo. En Debian/Ubuntu, `sudo apt install python3-tk` proporciona Tk para usar TkAgg; en otros sistemas instala un backend compatible con tu Python. Si el entorno solo dispone de Agg, se guarda el PNG y se indica que no se puede abrir la ventana.
-
-También puedes dibujar un historial existente, sin repetir el entrenamiento:
+Para abrir la ventana y entrenar durante 1000 épocas:
 
 ```bash
-.venv/bin/python plot_loss.py training_history.csv
+./run_drann.sh --epochs 1000
 ```
 
-Para observar mejor pérdidas pequeñas, añade `--log-y`; para guardar sin abrir ventana, `--no-show`. Ambos argumentos funcionan también con el lanzador:
+Sin argumentos se utiliza la configuración de `main()`, inicialmente 100 épocas. `--epochs` funciona también en el ejecutable de consola. El lanzador compila el código actual, sin reescribir tu configuración.
+
+Si editaste `DRANN.cpp` localmente para cambiar las épocas, guarda ese cambio antes de actualizar la rama. Cuando `git status` muestre esa modificación, puedes usar:
 
 ```bash
-DRANN_PYTHON=.venv/bin/python ./run_drann.sh --log-y
-.venv/bin/python plot_loss.py training_history.csv --no-show
+git stash push -m "configuracion local de DRANN" -- DRANN.cpp
+git pull --ff-only
+git stash pop
 ```
 
-La gráfica lee todas las filas disponibles, sin fijar un número de épocas ni suavizar los valores. Python y Matplotlib solo dibujan el CSV; el modelo y el entrenamiento siguen implementados íntegramente en C++. La ejecución directa de `./build/drann` conserva su funcionamiento de consola sin depender de Python.
+Conserva cualquier conflicto de combinación para resolverlo, sin descartar tus cambios. En adelante, `--epochs 1000` permite elegir ese valor sin editar el archivo.
+
+La ventana incluye:
+
+- Pausa y continuación entre épocas: mientras está pausada no se actualiza el modelo.
+- Escala lineal o logarítmica.
+- Ajuste automático de los ejes; desactívalo para explorar con zoom y desplazamiento.
+- Épocas por actualización, para acelerar el entrenamiento agrupando puntos por fotograma. Todos los puntos se conservan.
+- Pérdidas actuales, progreso y número de conexiones y neuronas participantes.
+
+La ventana permanece abierta al completar el entrenamiento. Cerrarla antes detiene el proceso después de la época actual y conserva en el CSV las evaluaciones completadas. El límite de refresco visual no es un parámetro de la dinámica neuronal ni cambia el orden de las actualizaciones.
+
+También puedes compilar manualmente:
+
+```bash
+cmake -S . -B build/native -DCMAKE_BUILD_TYPE=Release
+cmake --build build/native --parallel 2
+./build/native/drann_gui --epochs 1000
+ctest --test-dir build/native --output-on-failure
+```
+
+Se necesita una sesión gráfica y OpenGL 3.3 (3.2 en macOS). El ejecutable de consola conserva su compilación directa independiente de GLFW, ImGui e ImPlot. Para usar CMake sin bibliotecas gráficas ni descargar esas dependencias:
+
+```bash
+cmake -S . -B build/headless -DDRANN_BUILD_GUI=OFF
+cmake --build build/headless --parallel 2
+./build/headless/drann --epochs 1000
+ctest --test-dir build/headless --output-on-failure
+```
+
+La versión anterior que dibujaba con Python al terminar se ha sustituido por esta interfaz. El CSV sigue escribiéndose y se actualiza después de cada evaluación.
 
 ## Configuración del experimento
 

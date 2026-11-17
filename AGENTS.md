@@ -6,7 +6,7 @@
 - La primera implementación está en `DRANN.cpp`; `tests/DRANN_tests.cpp` incluye ese archivo con `DRANN_NO_MAIN` para comprobar el mismo núcleo sin duplicarlo. Leer también el README y `docs/experiment-v1.md` para compilar y conocer los resultados observados. Las solicitudes claras de implementación autorizan avanzar dentro del alcance acordado, sin añadir una aprobación adicional por este archivo.
 - El núcleo se implementará desde cero en C++, incluidos forward, backward y actualización de parámetros. No usar PyTorch, LibTorch ni otro framework de redes neuronales o autodiferenciación.
 - Primero obtener un ejecutable de consola. Godot es secundario y se integrará después; no añadir ahora GDExtension ni dependencias de Godot.
-- `run_drann.sh` compila y ejecuta el núcleo, y después abre `plot_loss.py` con Matplotlib. Python se usa solo para gráficas, no para el modelo ni el entrenamiento. Preservar los cambios locales de configuración en `DRANN.cpp`; el lanzador no modifica ese archivo.
+- `run_drann.sh` compila y abre `drann_gui`: interfaz nativa C++ con ImPlot, Dear ImGui y GLFW/OpenGL. No requiere Python ni Matplotlib. `DRANN.cpp` sigue compilando como consola sin dependencias gráficas. La gráfica recibe métricas por época y no altera los parámetros. Preservar los ajustes locales de configuración; `--epochs` permite cambiar las épocas sin editar el archivo.
 - No introducir cambios matemáticos de forma implícita. Documentar las decisiones nuevas y distinguirlas de lo que ya pidió el usuario. Resolver las elecciones rutinarias de implementación con criterio, sin convertirlas en permisos innecesarios.
 
 ## Estilo solicitado

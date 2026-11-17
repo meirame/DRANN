@@ -1,8 +1,10 @@
 #include <cmath>     // comprobación de valores finitos
 #include <cstddef>   // índices de los vectores
 #include <fstream>   // historial del entrenamiento
+#include <functional> // notificar las evaluaciones sin depender de la interfaz
 #include <iomanip>   // precisión de la salida
 #include <iostream>  // salida por terminal
+#include <limits>    // límite del contador de épocas
 #include <random>    // inicialización de los pesos
 #include <stdexcept> // errores sin inventar una recuperación del modelo
 #include <string>    // nombre del archivo de resultados
@@ -43,6 +45,12 @@ struct drannGradients {
 
 struct drannMetrics {
   double loss, meanSteps;
+};
+
+struct drannEpoch {
+  int e;
+  drannMetrics training, validation;
+  std::size_t connections, participants;
 };
 
 struct DRANN {
@@ -304,10 +312,11 @@ struct DRANN {
   }
 
   /*=======TRAINING=======*/
-  void train(const std::vector<double> &X, const std::vector<double> &Y,
+  int train(const std::vector<double> &X, const std::vector<double> &Y,
              const std::vector<double> &Xvalidation,
              const std::vector<double> &Yvalidation, int epochs,
-             const std::string &historyPath) {
+             const std::string &historyPath,
+             const std::function<bool(const drannEpoch &)> &onEpoch = {}) {
     if (epochs < 1)
       throw std::invalid_argument("El número de épocas debe ser positivo.");
     std::ofstream history(historyPath);
@@ -323,14 +332,18 @@ struct DRANN {
       history << e << ',' << training.loss << ',' << validation.loss << ','
               << training.meanSteps << ',' << validation.meanSteps << ','
               << activeConnections() << ',' << participantCount() << '\n';
+      history.flush();
       if (!history)
         throw std::runtime_error("No se pudo escribir el historial.");
       std::cout << "Epoch " << e << " | Training loss = " << training.loss
                 << " | Validation loss = " << validation.loss
                 << " | Active connections = " << activeConnections() << '\n';
+      return !onEpoch || onEpoch({e, training, validation, activeConnections(),
+                                 participantCount()});
     };
 
-    record(0); // Referencia anterior a las actualizaciones.
+    if (!record(0)) // Referencia anterior a las actualizaciones.
+      return 0;
     for (int e = 1; e <= epochs; e++) {
       for (std::size_t ej = 0; ej < X.size(); ej++) {
         forwardRhizome(X[ej]);
@@ -338,8 +351,10 @@ struct DRANN {
         drannGradients gradients = backpropRhizome(Y[ej]);
         parameterUpdate(gradients);
       }
-      record(e); // Ambos conjuntos con los mismos parámetros finales de la época.
+      if (!record(e)) // Ambos conjuntos con los parámetros finales de la época.
+        return e;
     }
+    return epochs;
   }
 
   /*=======VALIDATION=======*/
@@ -362,7 +377,11 @@ struct DRANN {
 };
 
 #ifndef DRANN_NO_MAIN
-int main() {
+#ifdef DRANN_GUI
+#include "graphics/DRANN_plot.h"
+#endif
+
+int main(int argc, char **argv) {
   try {
     /*=======DATASET=======*/
     // Elección inicial documentada: 8 ejemplos de entrenamiento y 2 de validación.
@@ -383,16 +402,36 @@ int main() {
     double lr = 0.005;
     int epochs = 100;
     unsigned int seed = 42;
+    if (argc != 1) {
+      if (argc != 3 || std::string(argv[1]) != "--epochs")
+        throw std::invalid_argument("Uso: drann [--epochs numero_positivo]");
+      std::size_t parsed = 0;
+      std::string value = argv[2];
+      epochs = std::stoi(value, &parsed);
+      if (parsed != value.size() || epochs < 1 ||
+          epochs == std::numeric_limits<int>::max())
+        throw std::invalid_argument("El número de épocas debe ser positivo y representable.");
+    }
     DRANN drann(neuronNumber, lr);
     drann.initWeights(seed);
 
     std::cout << std::setprecision(10);
     std::cout << "DRANN | Neurons: " << neuronNumber << " | Seed: " << seed
               << " | lr: " << lr << " | Epochs: " << epochs << '\n';
-    drann.train(X, Y, Xvalidation, Yvalidation, epochs, "training_history.csv");
+    std::function<bool(const drannEpoch &)> onEpoch;
+#ifdef DRANN_GUI
+    DRANNPlot plot(epochs);
+    onEpoch = [&](const drannEpoch &epoch) { return plot.update(epoch); };
+#endif
+    int completed = drann.train(X, Y, Xvalidation, Yvalidation, epochs,
+                               "training_history.csv", onEpoch);
     for (std::size_t ej = 0; ej < Xvalidation.size(); ej++)
       drann.validation(Xvalidation[ej], Yvalidation[ej]);
-    std::cout << "Training has finished. History: training_history.csv\n";
+    std::cout << "Training stopped after " << completed << '/' << epochs
+              << " epochs. History: training_history.csv\n";
+#ifdef DRANN_GUI
+    plot.finish();
+#endif
     return 0;
   } catch (const std::exception &error) {
     std::cerr << "DRANN: " << error.what() << '\n';

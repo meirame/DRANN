@@ -55,3 +55,21 @@ Para regenerar todas las filas, compilar y ejecutar siguiendo el README. El prog
 ## Alcance
 
 La geometría vacía provoca un error explícito: no se ha añadido una recuperación para el aislamiento total. El backward conserva las decisiones discretas del recorrido y no evalúa alternativas. No hay gradientes sustitutos, reintegración ni Godot en este ejecutable.
+
+## Ventana nativa C++ y regresión numérica
+
+La gráfica en vivo se implementó con Dear ImGui `v1.91.9b`, ImPlot `v0.17` y GLFW/OpenGL. La función de entrenamiento notifica el estado inicial y las evaluaciones de cada época mediante un callback; ninguna biblioteca gráfica calcula gradientes ni actualiza parámetros.
+
+Comprobaciones adicionales:
+
+- Compilación de consola, pruebas y ventana nativa con CMake; las dependencias de ImGui e ImPlot están fijadas mediante URL y SHA-256.
+- Pruebas de notificaciones: callback y consola sin callback generan el mismo CSV. Solicitar cancelación en una época produce exactamente el mismo entrenamiento que ejecutar solo hasta esa época.
+- El historial de consola de 100 épocas coincide byte a byte con el generado por la versión anterior.
+- Ejecución gráfica real de 1000 épocas: curvas visibles en progreso, escala logarítmica y ventana que permanece abierta al terminar.
+- El CSV gráfico de 1000 épocas coincide byte a byte con el de consola, incluidas las 1001 evaluaciones desde la época cero.
+- Pausa comprobada en la época 1419 de una ejecución de prueba más larga: el CSV se mantiene sin cambios mientras la ventana está pausada. La continuación reanuda el entrenamiento.
+- Cierre anticipado comprobado: el CSV conservado coincide con una ejecución de consola hasta la misma época de cierre.
+
+A las 1000 épocas, la pérdida geométrica normalizada fue aproximadamente `0.0100537254` en entrenamiento y `0.00430964995` en validación. Estos son resultados del experimento concreto, no una garantía de que aumentar las épocas siempre mejore la generalización.
+
+La gráfica Python posterior al entrenamiento se sustituyó por la ventana nativa. El ejecutable de consola y la configuración CMake con `DRANN_BUILD_GUI=OFF` siguen disponibles sin dependencias gráficas.
