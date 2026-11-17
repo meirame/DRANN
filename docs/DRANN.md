@@ -195,6 +195,8 @@ Se busca una implementación manual legible: `struct`, vectores, cachés, bucles
 
 La implementación comienza con un único `.cpp` de producción y utiliza C++17 y la biblioteca estándar. Se compila directamente con `g++`, sin un sistema de construcción adicional. El historial se guarda en `training_history.csv`: evaluación inicial (época 0) y cien evaluaciones posteriores. La salida por terminal muestra los puntos individuales del cognifenómeno primitivo de validación en Fahrenheit; no introduce un promedio como nueva definición de predicción.
 
+El usuario solicitó una gráfica al ejecutar. `run_drann.sh` compila el C++ actual y lo ejecuta; al terminar, `plot_loss.py` representa las pérdidas de entrenamiento y validación mediante Matplotlib, abre la ventana si dispone de un backend interactivo y guarda `training_history.png`. Lee todas las épocas del CSV, incluidas ejecuciones configuradas con 1000 épocas. La visualización no modifica las reglas, parámetros ni resultados del entrenamiento. La ejecución directa del binario sigue siendo independiente de Python.
+
 La regla irreversible se confirmó explícitamente para las conexiones internas simétricas. En esta implementación no se extiende a los pesos de entrada: son parámetros ordinarios del gradiente y pueden cambiar de signo. Esta decisión de alcance está documentada para que no se confunda con un recorte permanente de todos los parámetros.
 
 El programa no define una recuperación para el aislamiento total. Si encuentra un cognifenómeno vacío, termina con un error explícito en lugar de dividir entre cero, devolver un acierto o inventar una pérdida. Se comprueba esta frontera sin añadir un tratamiento matemático al modelo.

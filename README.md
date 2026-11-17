@@ -20,6 +20,42 @@ El programa ejecuta 100 épocas con 5 neuronas y `lr = 0.005`. Genera `training_
 
 Al terminar muestra el cognifenómeno primitivo completo de los dos ejemplos de validación, desnormalizado a Fahrenheit. No sustituye la nube por una neurona de salida ni por un promedio para calcular la pérdida.
 
+## Ejecutar con gráfica automática
+
+`run_drann.sh` compila el C++ actual, ejecuta el entrenamiento y abre una ventana de Matplotlib con las pérdidas de entrenamiento y validación por época. Usa la configuración que tengas en `main()`, incluidas tus modificaciones locales a 1000 épocas. No modifica `DRANN.cpp`.
+
+Instala una vez el entorno de gráficas:
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements-plot.txt
+```
+
+Para entrenar y mostrar la gráfica:
+
+```bash
+DRANN_PYTHON=.venv/bin/python ./run_drann.sh
+```
+
+Si tu `python3` ya tiene Matplotlib, basta con `./run_drann.sh`. La ventana permite ampliar, desplazar y guardar la figura mediante la barra de Matplotlib; el programa también guarda `training_history.png` automáticamente. La imagen y el CSV se reemplazan en cada ejecución. La ventana se abre al terminar el entrenamiento, no durante las épocas.
+
+Se necesita una sesión gráfica y un backend interactivo. En Debian/Ubuntu, `sudo apt install python3-tk` proporciona Tk para usar TkAgg; en otros sistemas instala un backend compatible con tu Python. Si el entorno solo dispone de Agg, se guarda el PNG y se indica que no se puede abrir la ventana.
+
+También puedes dibujar un historial existente, sin repetir el entrenamiento:
+
+```bash
+.venv/bin/python plot_loss.py training_history.csv
+```
+
+Para observar mejor pérdidas pequeñas, añade `--log-y`; para guardar sin abrir ventana, `--no-show`. Ambos argumentos funcionan también con el lanzador:
+
+```bash
+DRANN_PYTHON=.venv/bin/python ./run_drann.sh --log-y
+.venv/bin/python plot_loss.py training_history.csv --no-show
+```
+
+La gráfica lee todas las filas disponibles, sin fijar un número de épocas ni suavizar los valores. Python y Matplotlib solo dibujan el CSV; el modelo y el entrenamiento siguen implementados íntegramente en C++. La ejecución directa de `./build/drann` conserva su funcionamiento de consola sin depender de Python.
+
 ## Configuración del experimento
 
 La configuración y el dataset están en `main()` para mantenerlos visibles y fáciles de modificar:
