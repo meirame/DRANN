@@ -222,3 +222,13 @@ La preferencia actual del usuario es trabajar y ejecutar la DRANN en su ordenado
 Este chat remoto no tiene acceso directo a la carpeta local ni puede cambiar de equipo de ejecución mediante las herramientas disponibles. Para completar el traslado hay que abrir esa carpeta como proyecto local en Codex y retomar allí el trabajo con estos documentos.
 
 Estos archivos preservan el contexto del proyecto, no una copia literal ni una sincronización del historial de conversación. Al retomar desde otro chat, leer esta especificación y `AGENTS.md`, revisar el estado real del repositorio y continuar desde lo ya implementado.
+
+## 11. Siguiente experimento acordado, pendiente de implementación
+
+El usuario ha seleccionado Celsius → (Fahrenheit, Kelvin) como siguiente tarea, con un output interpretado como un único punto bidimensional de coordenadas ordenadas. La lectura propuesta asocia a cada participante un vector `q_i(x)=sigma_geom(alpha_i*V_last[i](x)+beta_i)`, con alpha y beta aprendibles y activación por coordenada.
+
+La tarea, el backward, las comprobaciones, las limitaciones de la lectura escalar y las decisiones pendientes están en [experiment-celsius-fahrenheit-kelvin.md](experiment-celsius-fahrenheit-kelvin.md). La activación interna y las reglas de transmisión de v1 no cambian por esta lectura. Leaky ReLU y Adam fueron propuestos, pero no están fijados ni implementados mediante esta actualización documental.
+
+La [reducción compensada al estancarse el entrenamiento](ideas/reduction-on-plateau.md) queda registrada como trabajo futuro separado. La redundancia geométrica selecciona candidatas; su función en el cálculo debe compensarse antes de eliminarlas.
+
+Los apartados anteriores describen el ejecutable escalar existente. No presentar este siguiente experimento ni la reducción como funcionalidades ya disponibles.
