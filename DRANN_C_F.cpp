@@ -1,4 +1,6 @@
 #include <algorithm> // fijar un mínimo en los intervalos de salida
+#include <chrono>    // tiempos de entrenamiento y estimación de lo que queda
+#include <cstdlib>   // TERM y NO_COLOR
 #include <cmath>     // comprobación de valores finitos
 #include <cstddef>   // índices de los vectores
 #include <fstream>   // historial del entrenamiento
@@ -27,6 +29,86 @@ aporta su último potencial al cognifenómeno primitivo, aunque ya haya transmit
 Los papeles se deciden simultáneamente al comienzo de cada paso tau.
 El backward deriva el recorrido realizado; no deriva las decisiones discretas.
 */
+
+// Presentación por terminal inspirada en satellite_CNN_HL5.cpp.
+// Los colores y el movimiento del cursor solo se usan en terminales compatibles.
+struct drannConsole {
+  using Clock = std::chrono::steady_clock;
+  std::ostream &out;
+  bool terminal = false, colors = false;
+
+  explicit drannConsole(std::ostream &output = std::cout) : out(output) {
+#if defined(__unix__) || defined(__APPLE__)
+    terminal = (&out == &std::cout && isatty(STDOUT_FILENO)) ||
+               (&out == &std::cerr && isatty(STDERR_FILENO));
+#elif defined(_WIN32)
+    terminal = (&out == &std::cout && _isatty(_fileno(stdout))) ||
+               (&out == &std::cerr && _isatty(_fileno(stderr)));
+#endif
+    const char *term = std::getenv("TERM");
+    terminal = terminal && (!term || std::string(term) != "dumb");
+    colors = terminal && !std::getenv("NO_COLOR");
+  }
+
+  const char *color(int value) const {
+    if (!colors)
+      return "";
+    switch (value) {
+      case 4: return "\033[31m";  // Rojo: errores.
+      case 6: return "\033[33m";  // Amarillo: esperas y avisos.
+      case 8: return "\033[90m";  // Gris: detalles y tiempos.
+      case 10: return "\033[32m"; // Verde: progreso y éxitos.
+      case 15: return "\033[37m"; // Blanco: cabeceras y resultados.
+      default: return "\033[0m";
+    }
+  }
+
+  void line(int value, const std::string &message) const {
+    out << color(value) << message << color(0) << '\n';
+  }
+
+  void prompt(int value, const std::string &message) const {
+    out << color(value) << message << color(0) << std::flush;
+  }
+
+  static std::string duration(Clock::duration elapsed) {
+    const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
+    std::ostringstream text;
+    text << ms / 3600000 << "hrs " << (ms / 60000) % 60 << "min "
+         << (ms / 1000) % 60 << "s " << ms % 1000 << "ms";
+    return text.str();
+  }
+
+  std::string progress(int e, int goal, int first, Clock::duration elapsed,
+                       bool stopped = false) const {
+    const double ratio = static_cast<double>(e) / goal;
+    const int width = 20;
+    const int filled = static_cast<int>(ratio * width);
+    std::ostringstream text;
+    text << color(15) << "Epochs: [";
+    for (int i = 0; i < width; i++)
+      text << color(i < filled ? 10 : 6) << (i < filled ? '#' : '.');
+    text << color(15) << "] " << color(10) << e << '/' << goal << " ("
+         << std::fixed << std::setprecision(2) << ratio * 100.0 << "%)";
+    if (stopped)
+      text << color(6) << " Stopped.";
+    else if (e == goal)
+      text << " Completed.";
+    else if (e > first) {
+      // Al reanudar, estimar con las épocas ejecutadas en este tramo.
+      const double seconds = std::chrono::duration<double>(elapsed).count();
+      const double remaining = std::ceil(seconds * (goal - e) / (e - first));
+      text << color(6) << " Remaining: " << std::setprecision(0)
+           << std::floor(remaining / 3600.0) << "hrs, "
+           << std::floor(std::fmod(remaining, 3600.0) / 60.0) << "min, "
+           << std::fmod(remaining, 60.0) << "secs.";
+    } else {
+      text << color(6) << " Remaining: --";
+    }
+    text << color(0);
+    return text.str();
+  }
+};
 
 struct drannFunctions {
   /*=======ACTIVATION FUNCTIONS=======*/
@@ -342,15 +424,19 @@ struct DRANN {
                  "validation_mean_steps,active_connections,participating_neurons\n";
     }
 
-    const int logInterval = std::max(1, epochs / 10); // Frecuencia de los logs.
-    const int chompInterval = std::max(1, logInterval / 4); // Alternancia de la boca.
+    drannConsole console;
+    using Clock = drannConsole::Clock;
+    const auto started = Clock::now();
+    auto lastProgress = started;
+    const int firstEpoch = resumeAfter.value_or(0);
+    const int logInterval = std::max(1, epochs / 10); // Frecuencia de los resúmenes.
     int terminalRows = 0;
     bool pinnedProgress = false;
 #if defined(__unix__) || defined(__APPLE__)
     struct winsize terminalSize {};
-    pinnedProgress = isatty(STDOUT_FILENO) &&
+    pinnedProgress = console.terminal &&
                      ioctl(STDOUT_FILENO, TIOCGWINSZ, &terminalSize) == 0 &&
-                     terminalSize.ws_row > 1;
+                     terminalSize.ws_row > 2 && terminalSize.ws_col >= 120;
     if (pinnedProgress) {
       terminalRows = terminalSize.ws_row;
       std::cout << "\033[1;" << terminalRows - 1 << "r"
@@ -366,94 +452,109 @@ struct DRANN {
       }
     } terminalReset{pinnedProgress, terminalRows};
 
-    auto printProgress = [&](int e) {
+    auto printLog = [&](int color, const std::string &message) {
+      if (pinnedProgress)
+        std::cout << "\033[" << terminalRows - 1 << ";1H\r\033[2K";
+      console.line(color, message);
+    };
+    auto printProgress = [&](int e, bool force, bool stopped = false) {
       if (!pinnedProgress)
         return;
-      const double progress = static_cast<double>(e) / epochs;
-      const int barWidth = 40;
-      int chomper = static_cast<int>(progress * barWidth);
-      if (chomper >= barWidth)
-        chomper = barWidth - 1;
-      std::string bar;
-      bar.reserve(barWidth);
-      for (int i = 0; i < barWidth; i++) {
-        if (i < chomper)
-          bar.push_back('-'); // Recorrido ya comido.
-        else if (i == chomper)
-          bar.push_back((e / chompInterval) % 2 == 0 ? 'C' : 'c');
-        else if (i % 3 == 0)
-          bar.push_back('o'); // Comida que queda por delante.
-        else
-          bar.push_back(' ');
-      }
-      std::cout << "\033[" << terminalRows << ";1H"
-                << "Épocas: [" << bar << "] "
-                << static_cast<int>(progress * 100.0) << "%\033[K"
-                << "\033[" << terminalRows - 1 << ";1H" << std::flush;
+      const auto now = Clock::now();
+      if (!force && now - lastProgress < std::chrono::milliseconds(100))
+        return;
+      lastProgress = now;
+      std::cout << "\033[" << terminalRows << ";1H\r"
+                << console.progress(e, epochs, firstEpoch, now - started, stopped)
+                << "\033[K\033[" << terminalRows - 1 << ";1H" << std::flush;
     };
-
-    auto printLog = [&](const std::string &message) {
-      if (pinnedProgress) {
-        std::cout << "\033[" << terminalRows - 1 << ";1H\r\033[2K"
-                  << message << "\r\n";
-      } else {
-        std::cout << message << '\n';
-      }
+    auto finishLog = [&](int e) {
+      printProgress(e, true, e < epochs);
+      printLog(8, "Total training duration: " + drannConsole::duration(Clock::now() - started));
+      printLog(e == epochs ? 10 : 6, e == epochs ? "Training has finished."
+                        : "Training stopped after epoch " + std::to_string(e) + '.');
     };
+    printLog(15, "------------------------------------------------");
+    printLog(10, resumeAfter ? "Training will continue from epoch " + std::to_string(firstEpoch + 1) + '.'
+                            : "Training will start.");
+    printLog(8, "Training samples: " + std::to_string(X.size()) +
+                " | Validation samples: " + std::to_string(Xvalidation.size()));
+    printProgress(firstEpoch, true);
 
     auto record = [&](int e) {
       drannMetrics training = evaluate(X, Y);
       drannMetrics validation = evaluate(Xvalidation, Yvalidation);
+      const auto evaluated = Clock::now();
       history << e << ',' << training.loss << ',' << validation.loss << ','
               << training.meanSteps << ',' << validation.meanSteps << ','
               << activeConnections() << ',' << participantCount() << '\n';
       history.flush();
       if (!history)
         throw std::runtime_error("No se pudo escribir el historial.");
-      if (e > 0 && e % logInterval == 0) {
+      const bool keepTraining = !onEpoch || onEpoch({e, training, validation, activeConnections(),
+                                                     participantCount()});
+      if (e == 0 || e == epochs || e % logInterval == 0 || !keepTraining) {
+        printLog(8, "------------------------------------------------");
+        printLog(15, "Epoch -> " + std::to_string(e) + " / " + std::to_string(epochs) + '.');
         std::ostringstream message;
-        message << "Epoch " << e << " | Training loss = " << training.loss
-                << " | Validation loss = " << validation.loss
-                << " | Active connections = " << activeConnections()
-                << " | Participating neurons = " << participantCount();
-        printLog(message.str());
+        message << std::setprecision(10) << "Training Loss: " << training.loss
+                << " | Validation Loss: " << validation.loss
+                << "\nActive connections: " << activeConnections()
+                << " | Participating neurons: " << participantCount()
+                << " | Steps: " << validation.meanSteps;
+        // Una línea por llamada: mantener la barra fijada debajo del resumen.
+        std::istringstream lines(message.str());
+        for (std::string line; std::getline(lines, line);)
+          printLog(15, line);
+        if (!pinnedProgress)
+          printLog(15, console.progress(e, epochs, firstEpoch, evaluated - started, !keepTraining && e < epochs));
+        printProgress(e, true, !keepTraining && e < epochs);
       }
-      return !onEpoch || onEpoch({e, training, validation, activeConnections(),
-                                 participantCount()});
+      return keepTraining;
     };
 
-    if (!resumeAfter && !record(0)) // Referencia anterior a las actualizaciones.
+    if (!resumeAfter && !record(0)) { // Referencia anterior a las actualizaciones.
+      finishLog(0);
       return 0;
-    for (int e = resumeAfter.value_or(0) + 1; e <= epochs; e++) {
+    }
+    for (int e = firstEpoch + 1; e <= epochs; e++) {
       for (std::size_t ej = 0; ej < X.size(); ej++) {
         forwardRhizome(X[ej]);
         loss(Y[ej]);
         drannGradients gradients = backpropRhizome(Y[ej]);
         parameterUpdate(gradients);
       }
-      printProgress(e);
-      if (!record(e)) // Ambos conjuntos con los parámetros finales de la época.
+      if (!record(e)) { // Ambos conjuntos con los parámetros finales de la época.
+        finishLog(e);
         return e;
+      }
+      printProgress(e, false);
     }
+    finishLog(epochs);
     return epochs;
   }
 
   /*=======VALIDATION=======*/
   void validation(double x, double y) {
     forwardRhizome(x);
-    std::cout << "Input (C): " << x * 100.0 << " | Ideal (F): " << y * 100.0
-              << " | Cognifenomeno primitivo (F): [";
+    drannConsole console;
+    std::ostringstream message;
+    message << std::setprecision(10)
+            << "Input (C): " << x * 100.0 << " | Ideal (F): " << y * 100.0
+            << "\nCognifenomeno primitivo (F): [";
     bool first = true;
     for (std::size_t j = 0; j < sigmaCache.size(); j++) {
       if (participating[j]) {
         if (!first)
-          std::cout << ", ";
-        std::cout << sigmaCache[j] * 100.0;
+          message << ", ";
+        message << sigmaCache[j] * 100.0;
         first = false;
       }
     }
-    std::cout << "] | Geometric loss (normalized): " << loss(y)
-              << " | Steps: " << stepCache.size() << '\n';
+    message << "]\nGeometric loss (normalized): " << loss(y)
+            << " | Steps: " << stepCache.size();
+    console.line(15, message.str());
+    console.line(8, "------------------------------------------------");
   }
 };
 
@@ -471,14 +572,14 @@ static int waitForConsoleContinuation(int completed) {
   if (!interactive)
     return 0;
 
+  drannConsole console;
   const int maxAdditional = std::numeric_limits<int>::max() - 1 - completed;
   if (maxAdditional == 0) {
-    std::cout << "Se alcanzó el límite de épocas.\n";
+    console.line(6, "Se alcanzó el límite de épocas.");
     return 0;
   }
   while (true) {
-    std::cout << "¿Cuántas épocas más quieres entrenar? [0 o Intro para salir] "
-              << std::flush;
+    console.prompt(6, "¿Cuántas épocas más quieres entrenar? [0 o Intro para salir] ");
     std::string line;
     if (!std::getline(std::cin, line))
       return 0;
@@ -492,7 +593,7 @@ static int waitForConsoleContinuation(int completed) {
         additional >= 0 && additional <= maxAdditional)
       return additional == 0 ? 0 : completed + additional;
 
-    std::cout << "Introduce un número entero entre 0 y " << maxAdditional << ".\n";
+    console.line(4, "Introduce un número entero entre 0 y " + std::to_string(maxAdditional) + '.');
   }
 }
 #endif
@@ -514,7 +615,7 @@ int main(int argc, char **argv) {
     }
 
     /*=======CONFIGURATION=======*/
-    std::size_t neuronNumber = 2;
+    std::size_t neuronNumber = 3;
     double lr = 0.001;
     int epochs = 100000;
     unsigned int seed = 42;
@@ -531,9 +632,14 @@ int main(int argc, char **argv) {
     DRANN drann(neuronNumber, lr);
     drann.initWeights(seed);
 
-    std::cout << std::setprecision(10);
-    std::cout << "DRANN | Neurons: " << neuronNumber << " | Seed: " << seed
-              << " | lr: " << lr << " | Epochs: " << epochs << '\n';
+    drannConsole console;
+    console.line(15, "DRANN | Celsius -> Fahrenheit");
+    console.line(8, "------------------------------------------------");
+    std::ostringstream configuration;
+    configuration << std::setprecision(10) << "Neurons: " << neuronNumber << " | Seed: " << seed
+                  << " | lr: " << lr << " | Epochs: " << epochs;
+    console.line(8, configuration.str());
+    console.line(10, "Weights have been initialized.");
     std::function<bool(const drannEpoch &)> onEpoch;
 #ifdef DRANN_GUI
     DRANNPlot plot(epochs);
@@ -543,10 +649,13 @@ int main(int argc, char **argv) {
     while (epochs > 0) {
       const int completed = drann.train(X, Y, Xvalidation, Yvalidation, epochs,
                                         "training_history.csv", onEpoch, resumeAfter);
+      console.line(15, "Validation results:");
+      const auto validationStarted = drannConsole::Clock::now();
       for (std::size_t ej = 0; ej < Xvalidation.size(); ej++)
         drann.validation(Xvalidation[ej], Yvalidation[ej]);
-      std::cout << "Training stopped after " << completed << '/' << epochs
-                << " epochs. History: training_history.csv\n";
+      console.line(8, "Final validation duration: " +
+                      drannConsole::duration(drannConsole::Clock::now() - validationStarted));
+      console.line(10, "History saved in training_history.csv.");
 #ifdef DRANN_GUI
       epochs = plot.waitForContinuation();
 #else
@@ -556,7 +665,8 @@ int main(int argc, char **argv) {
     }
     return 0;
   } catch (const std::exception &error) {
-    std::cerr << "DRANN: " << error.what() << '\n';
+    drannConsole console(std::cerr);
+    console.line(4, "DRANN: " + std::string(error.what()));
     return 1;
   }
 }

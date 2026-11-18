@@ -22,6 +22,24 @@ Al terminar muestra el cognifenómeno primitivo completo de los dos ejemplos de 
 
 En una terminal interactiva, al terminar puedes introducir cuántas épocas más quieres entrenar. El programa continúa desde la siguiente época y agrega los resultados al mismo CSV. Pulsa Intro o escribe `0` para salir.
 
+Para compilar y ejecutar directamente en la terminal, sin abrir la gráfica:
+
+```bash
+./run_drann.sh --console --epochs 1000
+```
+
+Este comando recompila la versión de consola antes de ejecutarla, de modo que muestra los logs actuales aunque existan ejecutables antiguos en `build/` u `output/`. Sin `--console`, el lanzador sigue abriendo la ventana gráfica.
+
+## Logs de terminal
+
+La salida de `DRANN_C_F.cpp` sigue el estilo de `satellite_CNN_HL5.cpp`: cabeceras de época, separadores, pérdidas de entrenamiento y validación, conexiones activas, neuronas participantes y pasos internos. Los colores ANSI son blanco para resultados, gris para detalles y tiempos, verde para progreso y éxitos, amarillo para esperas y paradas manuales, y rojo para errores.
+
+Cada resumen muestra las dos pérdidas en una línea: `Training Loss: ... | Validation Loss: ...`. La línea siguiente usa `Active connections: ... | Participating neurons: ... | Steps: ...`. `Steps` es la media de pasos internos por ejemplo de validación de esa época.
+
+La barra usa `#` para lo completado y `.` para lo pendiente, con contador, porcentaje y tiempo restante estimado. Se mantiene abajo en terminales Unix compatibles de al menos 120 columnas; en terminales más estrechas o al redirigir la salida se imprime junto a los resúmenes. Hay aproximadamente diez resúmenes por tramo de entrenamiento, más el estado inicial y el último estado, también cuando se detiene antes de la meta. Las duraciones se muestran al terminar el tramo de entrenamiento y la validación final, sin tiempos ni `lr` entre épocas. Al reanudar, la estimación utiliza solo las épocas ejecutadas en el nuevo tramo.
+
+Los colores se desactivan al redirigir la salida, con `TERM=dumb` o con `NO_COLOR`. El CSV conserva todas las evaluaciones, sin colores ni cambios en su formato. La presentación no modifica los cálculos del modelo, la tasa de aprendizaje ni la continuación del entrenamiento.
+
 ## Gráfica nativa en tiempo real (C++)
 
 `run_drann.sh` compila y abre `drann_gui`, con una ventana de ImPlot + Dear ImGui + GLFW/OpenGL. Al completar cada época se añade un punto a las curvas de entrenamiento y validación. No necesita Python ni espera al final del entrenamiento para dibujar.

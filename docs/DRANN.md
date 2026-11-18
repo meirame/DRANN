@@ -209,6 +209,12 @@ La regla irreversible se confirmó explícitamente para las conexiones internas 
 
 El programa no define una recuperación para el aislamiento total. Si encuentra un cognifenómeno vacío, termina con un error explícito en lugar de dividir entre cero, devolver un acierto o inventar una pérdida. Se comprueba esta frontera sin añadir un tratamiento matemático al modelo.
 
+### Logs de terminal
+
+Por petición del usuario, `DRANN_C_F.cpp` adopta la presentación de `satellite_CNN_HL5.cpp`: cabeceras y resultados blancos, detalles y duraciones grises, progreso y éxitos verdes, avisos y esperas amarillos y errores rojos. La barra de `#` y `.` muestra épocas, porcentaje y tiempo restante. Se fija abajo cuando la terminal Unix dispone de espacio suficiente; en otros casos se imprime en los resúmenes. Se conserva la frecuencia aproximada de diez resúmenes por tramo y se muestran siempre la evaluación inicial y la última, incluso si el usuario detiene antes.
+
+Los resúmenes muestran ambas pérdidas en una línea y las conexiones activas, neuronas participantes y pasos medios de validación en otra, sin tiempos ni `lr` entre épocas. Las duraciones finales se miden con reloj monotónico y los milisegundos se calculan desde la duración real. La estimación al continuar considera las épocas ejecutadas en ese tramo. La salida redirigida queda libre de secuencias ANSI; `NO_COLOR` permite desactivar los colores en una terminal. La presentación conserva el CSV y sus evaluaciones, las reglas matemáticas, la configuración local y los mecanismos existentes de parada y continuación. No incorpora los cambios de tasa ni los checkpoints del archivo de referencia.
+
 ## 9. Propuestas reemplazadas o descartadas para v1
 
 - Neuronas que transmiten repetidamente: reemplazadas por retirada tras transmitir.
