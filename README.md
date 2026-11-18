@@ -139,6 +139,8 @@ La conversión todavía no es exacta. Dos ejemplos de validación y una tarea li
 ## Contexto del proyecto
 
 - [Especificación y decisiones de diseño](docs/DRANN.md).
+- [Próximo experimento: Celsius → (Fahrenheit, Kelvin), lectura alpha/beta y pendientes](docs/experiment-celsius-fahrenheit-kelvin.md). Documento de diseño; todavía no implementado.
+- [Propuesta de reducción compensada por estancamiento](docs/ideas/reduction-on-plateau.md).
 - [Instrucciones de trabajo y estilo](AGENTS.md).
 - [Referencia de estilo original: XOR.cpp](docs/reference/XOR.cpp). Este archivo es una referencia del usuario, no la implementación de la DRANN.
 - [Registro del primer experimento](docs/experiment-v1.md).
