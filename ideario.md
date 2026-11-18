@@ -31,9 +31,9 @@ No crear una red o parámetros distintos para cada ejemplo. No proporcionar el c
 
 Una operación puede perder información aunque su ecuación sea conocida. En una actualización escalar simplificada:
 
-$
+$$
 v_j^{\mathrm{nuevo}}=(1-w)v_j^{\mathrm{anterior}}+wv_i,
-$
+$$
 
 con $w\neq1$ y el resto de cantidades conocidas puede recuperarse el estado anterior. Con $w=1$, el resultado deja de depender de ese estado y la reconstrucción no es única.
 
@@ -43,18 +43,18 @@ Para una inversión completa habría que estudiar activaciones, dimensiones, mez
 
 Antes de intentar invertir todo el rizoma, podría estudiarse una transcendencia explícitamente invertible. Como ejemplo matemático, no como arquitectura acordada:
 
-$
+$$
 \vec{q}_i=\vec{b}_i^{(T)}+A_i\vec{V}_i,
-$
+$$
 
 donde $A_i$ es cuadrada e invertible. Para una posición objetivo:
 
-$
+$$
 \vec{V}_i^{\mathrm{obj}}
 =
 A_i^{-1}
 \left(\vec{q}_i^{\mathrm{obj}}-\vec{b}_i^{(T)}\right).
-$
+$$
 
 Esto permitiría obtener un objetivo inmanente y entrenar el rizoma para alcanzarlo. Las matrices de esta forma no están aprobadas para incorporarse al modelo activo.
 
@@ -81,7 +81,7 @@ Son antecedentes relacionados, no una validación de esta propuesta para DRANN.
 
 Continuar con el forward:
 
-$
+$$
 \mathrm{entrada}
 \longrightarrow
 \mathrm{estado\ inmanente\ del\ rizoma}
@@ -89,7 +89,7 @@ $
 \mathrm{transcendencia}
 \longrightarrow
 \mathrm{cognifenómeno\ primitivo}.
-$
+$$
 
 El entrenamiento compara posteriormente el resultado con el cognifenómeno ideal. No implementar ahora la reconstrucción inversa ni exigir reversibilidad del modelo activo.
 
@@ -107,3 +107,43 @@ El entrenamiento compara posteriormente el resultado con el cognifenómeno ideal
 - Aislamiento interno, exclusión de la representación y eliminación completa son decisiones diferentes. Toda retirada debe conservar cobertura y suficiente precisión, y mantener o compensar las contribuciones necesarias.
 
 Estas aclaraciones recogen el estado de la conversación teórica. No afirman que el código publicado ya las implemente. La transformación exacta de transcendencia, su pérdida y la lectura de la respuesta siguen por concretar en el camino activo.
+
+## 2. Influencia colectiva transcendente sobre neuronas aisladas
+
+Fecha de registro: 18 de noviembre de 2026.
+
+**Estado: alternativa aparcada; fuera del modelo activo por decisión del usuario.**
+
+### Idea
+
+Permitir que una neurona sin conexiones internas lea un resumen dinámico del estado inmanente de otras neuronas para calcular su desplazamiento transcendente. Así podría conservar una influencia virtual del conjunto pese a su aislamiento inmanente.
+
+Una posible forma de estudiarlo sería combinar el estado propio y una síntesis colectiva. No se ha elegido una fórmula, una topología transcendente ni una regla de agregación.
+
+### Motivo para aparcarla
+
+Una neurona aislada puede estimar un núcleo ideal eficazmente mediante su entrada y sus parámetros. Introducir dependencia del conjunto podría perturbar esa solución, acoplar errores o perjudicar el aislamiento que resultaba útil.
+
+Además, eliminar una neurona aislada ya no garantizaría que las demás posiciones permanezcan iguales si participa en un resumen colectivo. Habría que revisar dependencias en ambos planos, el efecto de cambiar el tamaño de la población y las condiciones de reducción.
+
+### Decisión activa
+
+Por ahora, una neurona aislada de las otras neuronas debe permanecer aislada también de sus señales dinámicas durante la transcendencia. Recibe la entrada, calcula su estado propio y produce su desplazamiento con sus parámetros. No añadirle un resumen global ni conexiones virtuales nuevas.
+
+Un origen geométrico fijo, calculado a partir del entrenamiento, es una referencia compartida y no un intercambio dinámico de estados entre neuronas.
+
+### Posibles comprobaciones futuras
+
+- Comparar cálculo exclusivamente propio con influencia colectiva, manteniendo datos, semillas y capacidad comparables.
+- Comprobar si el mecanismo aprende a ignorar el contexto cuando perjudica.
+- Distinguir lectura del conjunto de contribución al conjunto: son dos dependencias diferentes.
+- Medir precisión por componente, cobertura, estabilidad y consecuencias de eliminar representantes.
+- No interpretar proximidad geométrica como falta de utilidad ni exigir eliminar grupos que cooperan en estimar una propiedad.
+
+## Aclaraciones posteriores del camino activo
+
+- El origen transcendente propuesto es el centro de los núcleos ideales de todos los ejemplos de **entrenamiento**, calculado una vez con la normalización elegida y conservado al validar. No recalcularlo con el ideal de un ejemplo nuevo ni con las etiquetas de validación.
+- Los sesgos transcendentes se inicializarían a cero respecto a ese origen y seguirían siendo aprendibles.
+- Se mantiene la penalización por núcleos ideales sin representantes, además del acercamiento de las posiciones a núcleos.
+- Las congregaciones pueden ser grupos cooperativos especializados. Ni compartir núcleo prueba inutilidad ni quedar fuera de un núcleo prueba ausencia de contribución interna.
+- Está en discusión si prescindir de activaciones explícitas en ambos planos. Todavía no se ha tomado una decisión de implementación sobre ello. Seleccionar transmisoras por módulos ya introduce decisiones no lineales, pero no se ha demostrado que sean suficientes para las tareas deseadas.
