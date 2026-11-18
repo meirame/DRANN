@@ -4,7 +4,7 @@ Diseño de una red neuronal artificial rizomática diferencial, implementada des
 
 El primer experimento será una regresión de Celsius a Fahrenheit. Primero se desarrollará un ejecutable de consola; la integración con Godot se abordará después.
 
-La primera implementación está en `DRANN.cpp`, siguiendo la estructura y el estilo de `XOR.cpp`: `struct`, vectores, cachés, bucles y derivadas manuales. No utiliza frameworks neuronales ni autodiferenciación.
+El experimento Celsius a Fahrenheit está en `DRANN_C_F.cpp` y sigue la estructura y el estilo de `XOR.cpp`: `struct`, vectores, cachés, bucles y derivadas manuales. No utiliza frameworks neuronales ni autodiferenciación.
 
 ## Compilar y ejecutar
 
@@ -12,13 +12,15 @@ Se necesita un compilador con soporte para C++17. Desde la raíz del repositorio
 
 ```bash
 mkdir -p build
-g++ -std=c++17 -O2 -Wall -Wextra -Wpedantic DRANN.cpp -o build/drann
+g++ -std=c++17 -O2 -Wall -Wextra -Wpedantic DRANN_C_F.cpp -o build/drann
 ./build/drann
 ```
 
-El programa ejecuta 100 épocas con 5 neuronas y `lr = 0.005`. Genera `training_history.csv` en el directorio de ejecución: una evaluación inicial y otra tras cada época, con las pérdidas geométricas de entrenamiento y validación, pasos medios, conexiones activas y neuronas participantes. Una nueva ejecución reemplaza ese archivo.
+La configuración actual ejecuta 100 000 épocas con 2 neuronas y `lr = 0.001`. Genera `training_history.csv` en el directorio de ejecución: una evaluación inicial y otra tras cada época, con las pérdidas geométricas de entrenamiento y validación, pasos medios, conexiones activas y neuronas participantes. Una nueva ejecución reemplaza ese archivo.
 
 Al terminar muestra el cognifenómeno primitivo completo de los dos ejemplos de validación, desnormalizado a Fahrenheit. No sustituye la nube por una neurona de salida ni por un promedio para calcular la pérdida.
+
+En una terminal interactiva, al terminar puedes introducir cuántas épocas más quieres entrenar. El programa continúa desde la siguiente época y agrega los resultados al mismo CSV. Pulsa Intro o escribe `0` para salir.
 
 ## Gráfica nativa en tiempo real (C++)
 
@@ -38,12 +40,12 @@ Para abrir la ventana y entrenar durante 1000 épocas:
 ./run_drann.sh --epochs 1000
 ```
 
-Sin argumentos se utiliza la configuración de `main()`, inicialmente 100 épocas. `--epochs` funciona también en el ejecutable de consola. El lanzador compila el código actual, sin reescribir tu configuración.
+Sin argumentos se utiliza la configuración de `main()`, con una meta inicial de 100 000 épocas. `--epochs` funciona también en el ejecutable de consola. El lanzador compila el código actual, sin reescribir tu configuración.
 
-Si editaste `DRANN.cpp` localmente para cambiar las épocas, guarda ese cambio antes de actualizar la rama. Cuando `git status` muestre esa modificación, puedes usar:
+Si editaste `DRANN_C_F.cpp` localmente para cambiar las épocas, guarda ese cambio antes de actualizar la rama. Cuando `git status` muestre esa modificación, puedes usar:
 
 ```bash
-git stash push -m "configuracion local de DRANN" -- DRANN.cpp
+git stash push -m "configuracion local de DRANN" -- DRANN_C_F.cpp
 git pull --ff-only
 git stash pop
 ```
@@ -53,6 +55,8 @@ Conserva cualquier conflicto de combinación para resolverlo, sin descartar tus 
 La ventana incluye:
 
 - Pausa y continuación entre épocas: mientras está pausada no se actualiza el modelo.
+- Botón «Finalizar»: detiene el entrenamiento, también desde pausa, y conserva la gráfica abierta y el CSV hasta la última época completada.
+- «Continuar entrenamiento»: al completar la meta o pulsar «Finalizar», introduce las épocas adicionales que quieras ejecutar. Se conserva la red entrenada y se amplían la gráfica y el mismo CSV desde la siguiente época.
 - Escala lineal o logarítmica.
 - Ajuste automático de los ejes; desactívalo para explorar con zoom y desplazamiento.
 - Épocas por actualización, para acelerar el entrenamiento agrupando puntos por fotograma. Todos los puntos se conservan.
@@ -90,7 +94,7 @@ La configuración y el dataset están en `main()` para mantenerlos visibles y f�
 - Semilla inicial: `42`; ejemplos en orden fijo, sin barajado.
 - Pesos internos compartidos entre ambas direcciones; su anulación es irreversible durante el entrenamiento. Los pesos de entrada son parámetros ordinarios y no reciben esa anulación.
 
-Los valores concretos del dataset, la semilla y el orden son elecciones iniciales de implementación. Los parámetros acordados de tamaño, normalización, tasa y épocas se mantienen.
+La [variante de 40 temperaturas](docs/DRANN.md#71-variante-local-con-40-temperaturas) se conserva en la especificación. Los resultados históricos corresponden al experimento inicial con 5 neuronas y `lr = 0.005`.
 
 ## Comprobar el modelo
 

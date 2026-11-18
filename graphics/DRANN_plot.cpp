@@ -1,5 +1,5 @@
 #define DRANN_NO_MAIN
-#include "../DRANN.cpp"
+#include "../DRANN_C_F.cpp"
 #include "DRANN_plot.h"
 
 #define GLFW_INCLUDE_NONE
@@ -20,8 +20,9 @@ struct DRANNPlot::Impl {
   GLFWwindow *window = nullptr;
   bool glfwReady = false, imguiReady = false, implotReady = false;
   bool platformReady = false, rendererReady = false;
-  bool paused = false, logarithmic = false, autoFit = true;
-  int goal = 0, epochsPerFrame = 1, pending = 0;
+  bool paused = false, stopped = false, logarithmic = true, autoFit = true;
+  int goal = 0, epochsPerFrame = 100, pending = 0;
+  int additionalEpochs = 1000, nextGoal = 0;
   drannEpoch latest{0, {0.0, 0.0}, {0.0, 0.0}, 0, 0};
   std::vector<double> epochs, training, validation;
 
@@ -89,9 +90,14 @@ struct DRANNPlot::Impl {
                 latest.e, goal, latest.connections, latest.participants);
     ImGui::ProgressBar(static_cast<float>(latest.e) / static_cast<float>(goal),
                        ImVec2(-1, 0));
-    ImGui::BeginDisabled(latest.e >= goal);
+    ImGui::BeginDisabled(stopped || latest.e >= goal);
     if (ImGui::Button(paused ? "Continuar" : "Pausar"))
       paused = !paused;
+    ImGui::SameLine();
+    if (ImGui::Button("Finalizar")) {
+      stopped = true;
+      paused = false;
+    }
     ImGui::EndDisabled();
     ImGui::SameLine();
     ImGui::Checkbox("Escala logarítmica", &logarithmic);
@@ -99,6 +105,21 @@ struct DRANNPlot::Impl {
     ImGui::Checkbox("Ajustar ejes automáticamente", &autoFit);
     ImGui::SetNextItemWidth(220);
     ImGui::SliderInt("Épocas por actualización", &epochsPerFrame, 1, 100);
+    if (stopped || latest.e >= goal) {
+      ImGui::SetNextItemWidth(140);
+      ImGui::InputInt("Épocas adicionales", &additionalEpochs, 0);
+      const int maxAdditional = std::numeric_limits<int>::max() - 1 - latest.e;
+      const bool validEpochCount = additionalEpochs > 0 && additionalEpochs <= maxAdditional;
+      ImGui::SameLine();
+      ImGui::BeginDisabled(!validEpochCount);
+      if (ImGui::Button("Continuar entrenamiento"))
+        nextGoal = latest.e + additionalEpochs;
+      ImGui::EndDisabled();
+      if (maxAdditional == 0)
+        ImGui::TextUnformatted("Se alcanzó el límite de épocas.");
+      else if (!validEpochCount)
+        ImGui::Text("Introduce un número de épocas entre 1 y %d.", maxAdditional);
+    }
     ImGui::Text("Entrenamiento: %.9g    Validación: %.9g", latest.training.loss,
                 latest.validation.loss);
 
@@ -117,9 +138,10 @@ struct DRANNPlot::Impl {
                        static_cast<int>(epochs.size()));
       ImPlot::EndPlot();
     }
-    ImGui::TextUnformatted(latest.e >= goal ? "Entrenamiento completado. Puedes explorar la gráfica."
-                                         : paused ? "En pausa. El modelo no se actualiza."
-                                                  : "Entrenando...");
+    ImGui::TextUnformatted(stopped ? "Entrenamiento finalizado. Puedes explorar la gráfica."
+                                 : latest.e >= goal ? "Entrenamiento completado. Puedes explorar la gráfica."
+                                 : paused ? "En pausa. El modelo no se actualiza."
+                                          : "Entrenando...");
     ImGui::TextUnformatted("CSV: training_history.csv | Cerrar detiene el entrenamiento tras la época actual.");
     ImGui::End();
     ImGui::Render();
@@ -159,7 +181,7 @@ DRANNPlot::DRANNPlot(int epochs) : impl(std::make_unique<Impl>()) {
 DRANNPlot::~DRANNPlot() = default;
 
 bool DRANNPlot::update(const drannEpoch &epoch) {
-  if (impl->closed())
+  if (impl->closed() || impl->stopped)
     return false;
   impl->latest = epoch;
   impl->epochs.push_back(epoch.e);
@@ -169,15 +191,23 @@ bool DRANNPlot::update(const drannEpoch &epoch) {
   if (epoch.e == 0 || epoch.e == impl->goal || impl->pending >= impl->epochsPerFrame) {
     impl->pending = 0;
     impl->draw();
-    while (impl->paused && !impl->closed())
+    while (impl->paused && !impl->stopped && !impl->closed())
       impl->draw();
   } else {
     glfwPollEvents();
   }
-  return !impl->closed();
+  return !impl->closed() && !impl->stopped;
 }
 
-void DRANNPlot::finish() {
-  while (!impl->closed())
+int DRANNPlot::waitForContinuation() {
+  while (!impl->closed() && impl->nextGoal == 0)
     impl->draw();
+  if (impl->closed())
+    return 0;
+  impl->goal = impl->nextGoal;
+  impl->nextGoal = 0;
+  impl->stopped = false;
+  impl->paused = false;
+  impl->pending = 0;
+  return impl->goal;
 }

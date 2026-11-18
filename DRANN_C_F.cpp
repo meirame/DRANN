@@ -1,3 +1,4 @@
+#include <algorithm> // fijar un mínimo en los intervalos de salida
 #include <cmath>     // comprobación de valores finitos
 #include <cstddef>   // índices de los vectores
 #include <fstream>   // historial del entrenamiento
@@ -5,10 +6,20 @@
 #include <iomanip>   // precisión de la salida
 #include <iostream>  // salida por terminal
 #include <limits>    // límite del contador de épocas
+#include <optional>  // época desde la que se reanuda el entrenamiento
 #include <random>    // inicialización de los pesos
+#include <sstream>   // formar los logs sin perder precisión
 #include <stdexcept> // errores sin inventar una recuperación del modelo
 #include <string>    // nombre del archivo de resultados
 #include <vector>    // parámetros, estados y cachés
+
+#if defined(__unix__) || defined(__APPLE__)
+#include <sys/ioctl.h> // dimensiones de la terminal para fijar la barra abajo
+#include <unistd.h>    // comprobar si la entrada y la salida usan una terminal
+#elif defined(_WIN32)
+#include <cstdio>      // stdin
+#include <io.h>        // detectar la entrada interactiva en Windows
+#endif
 
 /* Filosofía
 El rizoma no tiene capas ni una neurona de salida. Cada neurona participante
@@ -316,15 +327,79 @@ struct DRANN {
              const std::vector<double> &Xvalidation,
              const std::vector<double> &Yvalidation, int epochs,
              const std::string &historyPath,
-             const std::function<bool(const drannEpoch &)> &onEpoch = {}) {
-    if (epochs < 1)
-      throw std::invalid_argument("El número de épocas debe ser positivo.");
-    std::ofstream history(historyPath);
+             const std::function<bool(const drannEpoch &)> &onEpoch = {},
+             std::optional<int> resumeAfter = std::nullopt) {
+    if (epochs < 1 || epochs == std::numeric_limits<int>::max())
+      throw std::invalid_argument("El número de épocas debe ser positivo y representable.");
+    if (resumeAfter && (*resumeAfter < 0 || *resumeAfter >= epochs))
+      throw std::invalid_argument("La nueva meta debe superar la última época completada.");
+    std::ofstream history(historyPath, resumeAfter ? std::ios::app : std::ios::trunc);
     if (!history)
       throw std::runtime_error("No se pudo abrir el historial: " + historyPath);
     history << std::setprecision(17);
-    history << "epoch,training_loss,validation_loss,training_mean_steps,"
-               "validation_mean_steps,active_connections,participating_neurons\n";
+    if (!resumeAfter) {
+      history << "epoch,training_loss,validation_loss,training_mean_steps,"
+                 "validation_mean_steps,active_connections,participating_neurons\n";
+    }
+
+    const int logInterval = std::max(1, epochs / 10); // Frecuencia de los logs.
+    const int chompInterval = std::max(1, logInterval / 4); // Alternancia de la boca.
+    int terminalRows = 0;
+    bool pinnedProgress = false;
+#if defined(__unix__) || defined(__APPLE__)
+    struct winsize terminalSize {};
+    pinnedProgress = isatty(STDOUT_FILENO) &&
+                     ioctl(STDOUT_FILENO, TIOCGWINSZ, &terminalSize) == 0 &&
+                     terminalSize.ws_row > 1;
+    if (pinnedProgress) {
+      terminalRows = terminalSize.ws_row;
+      std::cout << "\033[1;" << terminalRows - 1 << "r"
+                << "\033[" << terminalRows - 1 << ";1H" << std::flush;
+    }
+#endif
+    struct ProgressTerminalReset {
+      bool active;
+      int rows;
+      ~ProgressTerminalReset() {
+        if (active)
+          std::cout << "\033[r\033[" << rows << ";1H\r\n" << std::flush;
+      }
+    } terminalReset{pinnedProgress, terminalRows};
+
+    auto printProgress = [&](int e) {
+      if (!pinnedProgress)
+        return;
+      const double progress = static_cast<double>(e) / epochs;
+      const int barWidth = 40;
+      int chomper = static_cast<int>(progress * barWidth);
+      if (chomper >= barWidth)
+        chomper = barWidth - 1;
+      std::string bar;
+      bar.reserve(barWidth);
+      for (int i = 0; i < barWidth; i++) {
+        if (i < chomper)
+          bar.push_back('-'); // Recorrido ya comido.
+        else if (i == chomper)
+          bar.push_back((e / chompInterval) % 2 == 0 ? 'C' : 'c');
+        else if (i % 3 == 0)
+          bar.push_back('o'); // Comida que queda por delante.
+        else
+          bar.push_back(' ');
+      }
+      std::cout << "\033[" << terminalRows << ";1H"
+                << "Épocas: [" << bar << "] "
+                << static_cast<int>(progress * 100.0) << "%\033[K"
+                << "\033[" << terminalRows - 1 << ";1H" << std::flush;
+    };
+
+    auto printLog = [&](const std::string &message) {
+      if (pinnedProgress) {
+        std::cout << "\033[" << terminalRows - 1 << ";1H\r\033[2K"
+                  << message << "\r\n";
+      } else {
+        std::cout << message << '\n';
+      }
+    };
 
     auto record = [&](int e) {
       drannMetrics training = evaluate(X, Y);
@@ -335,22 +410,28 @@ struct DRANN {
       history.flush();
       if (!history)
         throw std::runtime_error("No se pudo escribir el historial.");
-      std::cout << "Epoch " << e << " | Training loss = " << training.loss
+      if (e > 0 && e % logInterval == 0) {
+        std::ostringstream message;
+        message << "Epoch " << e << " | Training loss = " << training.loss
                 << " | Validation loss = " << validation.loss
-                << " | Active connections = " << activeConnections() << '\n';
+                << " | Active connections = " << activeConnections()
+                << " | Participating neurons = " << participantCount();
+        printLog(message.str());
+      }
       return !onEpoch || onEpoch({e, training, validation, activeConnections(),
                                  participantCount()});
     };
 
-    if (!record(0)) // Referencia anterior a las actualizaciones.
+    if (!resumeAfter && !record(0)) // Referencia anterior a las actualizaciones.
       return 0;
-    for (int e = 1; e <= epochs; e++) {
+    for (int e = resumeAfter.value_or(0) + 1; e <= epochs; e++) {
       for (std::size_t ej = 0; ej < X.size(); ej++) {
         forwardRhizome(X[ej]);
         loss(Y[ej]);
         drannGradients gradients = backpropRhizome(Y[ej]);
         parameterUpdate(gradients);
       }
+      printProgress(e);
       if (!record(e)) // Ambos conjuntos con los parámetros finales de la época.
         return e;
     }
@@ -379,6 +460,41 @@ struct DRANN {
 #ifndef DRANN_NO_MAIN
 #ifdef DRANN_GUI
 #include "graphics/DRANN_plot.h"
+#else
+static int waitForConsoleContinuation(int completed) {
+  bool interactive = false;
+#if defined(__unix__) || defined(__APPLE__)
+  interactive = isatty(STDIN_FILENO) != 0;
+#elif defined(_WIN32)
+  interactive = _isatty(_fileno(stdin)) != 0;
+#endif
+  if (!interactive)
+    return 0;
+
+  const int maxAdditional = std::numeric_limits<int>::max() - 1 - completed;
+  if (maxAdditional == 0) {
+    std::cout << "Se alcanzó el límite de épocas.\n";
+    return 0;
+  }
+  while (true) {
+    std::cout << "¿Cuántas épocas más quieres entrenar? [0 o Intro para salir] "
+              << std::flush;
+    std::string line;
+    if (!std::getline(std::cin, line))
+      return 0;
+    std::istringstream input(line);
+    input >> std::ws;
+    if (input.eof())
+      return 0;
+
+    int additional = 0;
+    if (input >> additional && (input >> std::ws).eof() &&
+        additional >= 0 && additional <= maxAdditional)
+      return additional == 0 ? 0 : completed + additional;
+
+    std::cout << "Introduce un número entero entre 0 y " << maxAdditional << ".\n";
+  }
+}
 #endif
 
 int main(int argc, char **argv) {
@@ -398,9 +514,9 @@ int main(int argc, char **argv) {
     }
 
     /*=======CONFIGURATION=======*/
-    std::size_t neuronNumber = 5;
-    double lr = 0.005;
-    int epochs = 100;
+    std::size_t neuronNumber = 2;
+    double lr = 0.001;
+    int epochs = 100000;
     unsigned int seed = 42;
     if (argc != 1) {
       if (argc != 3 || std::string(argv[1]) != "--epochs")
@@ -423,15 +539,21 @@ int main(int argc, char **argv) {
     DRANNPlot plot(epochs);
     onEpoch = [&](const drannEpoch &epoch) { return plot.update(epoch); };
 #endif
-    int completed = drann.train(X, Y, Xvalidation, Yvalidation, epochs,
-                               "training_history.csv", onEpoch);
-    for (std::size_t ej = 0; ej < Xvalidation.size(); ej++)
-      drann.validation(Xvalidation[ej], Yvalidation[ej]);
-    std::cout << "Training stopped after " << completed << '/' << epochs
-              << " epochs. History: training_history.csv\n";
+    std::optional<int> resumeAfter;
+    while (epochs > 0) {
+      const int completed = drann.train(X, Y, Xvalidation, Yvalidation, epochs,
+                                        "training_history.csv", onEpoch, resumeAfter);
+      for (std::size_t ej = 0; ej < Xvalidation.size(); ej++)
+        drann.validation(Xvalidation[ej], Yvalidation[ej]);
+      std::cout << "Training stopped after " << completed << '/' << epochs
+                << " epochs. History: training_history.csv\n";
 #ifdef DRANN_GUI
-    plot.finish();
+      epochs = plot.waitForContinuation();
+#else
+      epochs = waitForConsoleContinuation(completed);
 #endif
+      resumeAfter = completed;
+    }
     return 0;
   } catch (const std::exception &error) {
     std::cerr << "DRANN: " << error.what() << '\n';

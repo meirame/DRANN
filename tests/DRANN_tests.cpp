@@ -1,5 +1,5 @@
 #define DRANN_NO_MAIN
-#include "../DRANN.cpp"
+#include "../DRANN_C_F.cpp"
 
 #include <algorithm>
 #include <cstdio>

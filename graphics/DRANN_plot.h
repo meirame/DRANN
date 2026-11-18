@@ -13,7 +13,8 @@ struct DRANNPlot {
   explicit DRANNPlot(int epochs);
   ~DRANNPlot();
   bool update(const drannEpoch &epoch);
-  void finish();
+  // Devuelve la nueva meta de épocas, o 0 si se cierra la ventana.
+  int waitForContinuation();
 };
 
 #endif

@@ -1,6 +1,6 @@
 # Especificación de DRANN, primera versión
 
-Estado: primera implementación en `DRANN.cpp`, con pruebas en `tests/DRANN_tests.cpp`. Esta especificación recoge las decisiones de la conversación hasta el 17 de noviembre de 2026 y distingue acuerdos de elecciones de implementación. Los resultados iniciales están en [experiment-v1.md](experiment-v1.md).
+Estado: el código del experimento Celsius a Fahrenheit está en `DRANN_C_F.cpp`, con pruebas en `tests/DRANN_tests.cpp`. Esta especificación recoge las decisiones de la conversación hasta el 17 de noviembre de 2026 y distingue acuerdos de elecciones de implementación. Los resultados iniciales están en [experiment-v1.md](experiment-v1.md).
 
 ## 1. Propósito y alcance
 
@@ -186,6 +186,14 @@ Temperaturas utilizadas como elección inicial de implementación, a partir de l
 - Validación Celsius: `{10, 70}`.
 
 El usuario confirmó la normalización, pero no seleccionó explícitamente esas diez temperaturas. Se utilizan para concretar el experimento autorizado. La implementación emplea semilla `42` y orden fijo, sin barajado. Son elecciones reproducibles, visibles en `main()`, no requisitos matemáticos del modelo.
+
+### 7.1 Variante local con 40 temperaturas
+
+Esta variante amplía el dataset inicial con 30 valores y usa una partición fija de 32 ejemplos de entrenamiento y 8 de validación. La configuración actual de `DRANN_C_F.cpp` ejecuta los 10 ejemplos del apartado anterior con 2 neuronas, `lr = 0.001` y una meta inicial de 100 000 épocas.
+
+Elección de implementación: temperaturas de −40 a 100 °C en incrementos de 4 °C, junto con 10, 30, 50 y 70 °C. Se reservan para validación `{-28, -8, 10, 30, 50, 70, 84, 96}`; las otras 32 se entrenan en orden creciente, sin barajado. Así se mantienen los diez valores originales en sus conjuntos respectivos y no hay solapamiento entre entrenamiento y validación.
+
+La variante usa la relación `F = 1.8*C + 32`, la normalización por 100, 5 neuronas, la semilla 42, `lr = 0.005` y las mismas reglas del modelo. Para esa partición se evalúan los 32 ejemplos de entrenamiento y los 8 de validación después de cada época. El número de épocas se elige con `--epochs`; el contador comienza en 1 y la evaluación inicial corresponde a 0. El refresco de la gráfica se controla por separado mediante «Épocas por actualización».
 
 ## 8. Referencia de implementación y estado del trabajo
 
