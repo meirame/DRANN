@@ -69,3 +69,9 @@ Referencias para investigar, no algoritmos incorporados:
 Registrar época del disparador, candidata, tamaño anterior y posterior, parámetros modificados o conexiones propuestas, pérdidas antes de reducir, después de compensar y después de recuperar, épocas de recuperación, decisión final y checkpoints asociados. Distinguir resultados medidos de estimaciones algebraicas.
 
 Este registro debe permitir seguir las ideas entre el chat teórico y el trabajo local sin presentar propuestas como funcionalidades existentes.
+
+## Desarrollo posterior aceptado
+
+El usuario ha confirmado combinar indicios de candidatura sin exigirlos todos: redundancia geométrica, conexiones débiles y contribuciones efectivas pequeñas. Ha confirmado también empezar por patrones algebraicos conocidos, saltar los no soportados y disponer de recuperación limitada con restauración.
+
+El [primer compensador desarrollado](reduction-midpoint-pattern.md) especifica una reducción de tres neuronas, sus condiciones, demostración, comprobación numérica independiente y contratos para el ciclo de recuperación. Sus condiciones son restrictivas; no se presenta como un algoritmo general ni como funcionalidad implementada en DRANN.cpp.
