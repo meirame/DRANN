@@ -1,0 +1,3 @@
+work_epoch_fallida=3456
+ultima_epoca_registrada=3455
+motivo=menos de dos participantes
