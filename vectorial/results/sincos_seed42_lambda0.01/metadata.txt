@@ -1,0 +1,32 @@
+dataset=sincos
+coordinates=seno, coseno
+output_scale=1
+training_samples=64
+validation_samples=64
+initial_goal=4000
+neurons=3
+seed=42
+lr=0.001
+lambda_target=0.01
+warmup=1000
+patience=200
+ramp=200
+max_pressure=2000
+max_recovery=500
+max_attempts=3
+min_improvement=0.001
+relative_tolerance=0.050000000000000003
+absolute_tolerance=9.9999999999999995e-07
+prox_abs_tol=1e-10
+prox_rel_tol=1e-10
+zero_tolerance=9.9999999999999998e-13
+max_sweeps=2000
+presupuesto=epocas_de_trabajo; sin_barajar; SGD_por_ejemplo
+exit_code=0
+compiler=c++ (GCC) 16.2.1 20260810
+binary_sha256=07c45eb80abd47e76523e4dca814f1fdd9f61d92983e4918dca27a8d94b86ba6
+source_sha256:
+aae5cad98c8b2ec73f02640a230a1a79a0340e43f69637d9e4c819a0b5e725b8  DRANN_vectorial.cpp
+f5d15213046c67a1af204da92766417de80869dbf45329ae2e6efe92563d6e63  DRANN_vectorial.h
+3e1192e76610f897005009727a9969cb926dbc1a8f29c10f0de6733b770ebfdb  entrenamiento.h
+a5c190fa288559edb77b547f0e244cd3f2b892e39a2afac18a05dec64f454753  terminal.h

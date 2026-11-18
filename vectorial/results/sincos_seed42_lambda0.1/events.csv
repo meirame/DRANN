@@ -1,0 +1,4 @@
+work_epoch,phase,attempt,reference_work,decision,newly_isolated,trial_train,trial_val,trial_train_0,trial_train_1,trial_val_0,trial_val_1,trial_worst_train,trial_worst_val,trial_edges,trial_participants,result_train,result_val,result_edges,result_participants
+1001,presion,1,1000,"inicio_presion",,,,,,,,,,,,0.84181036379974039,0.84879732566872268,3,3
+1178,presion,1,1000,"aislamiento_recuperacion_0",2,,,,,,,,,,,0.84126100185637553,0.84793296951576336,1,2
+1678,aceptacion,1,1000,"aceptado:dentro_de_tolerancias",,0.83792562106013158,0.8450955433626739,0.33869175533543272,0.4992338657246988,0.34587414532161942,0.49922139804105453,1.3141809742957662,1.3601505751218412,1,2,0.83791979746270173,0.84453796768600009,1,2

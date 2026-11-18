@@ -1,0 +1,27 @@
+DRANN vectorial | sincos | seno, coseno
+Historial: /tmp/DRANN-vectorial.480m2O/results/sincos_seed42_lambda0.1
+entrenamiento | entrenamiento=1.1233155 | validación=1.1124257 | conexiones=3 | neuronas=3 | lambda=0
+Epochs: [....................] 0/4000 (0.00%) Remaining: --
+entrenamiento | entrenamiento=0.84167028 | validación=0.84801199 | conexiones=3 | neuronas=3 | lambda=0
+Epochs: [##..................] 400/4000 (10.00%) Remaining: 0hrs, 0min, 3secs.
+entrenamiento | entrenamiento=0.84129596 | validación=0.84816759 | conexiones=3 | neuronas=3 | lambda=0
+Epochs: [####................] 800/4000 (20.00%) Remaining: 0hrs, 0min, 3secs.
+presion | entrenamiento=0.84181036 | validación=0.84879733 | conexiones=3 | neuronas=3 | lambda=0.0005 | inicio_presion | aisladas=
+Epochs: [#####...............] 1001/4000 (25.02%) Remaining: 0hrs, 0min, 3secs.
+presion | entrenamiento=0.841261 | validación=0.84793297 | conexiones=1 | neuronas=2 | lambda=0.089 | aislamiento_recuperacion_0 | aisladas=2
+Epochs: [#####...............] 1178/4000 (29.45%) Remaining: 0hrs, 0min, 3secs.
+recuperacion | entrenamiento=0.84006943 | validación=0.84686711 | conexiones=1 | neuronas=2 | lambda=0
+Epochs: [######..............] 1200/4000 (30.00%) Remaining: 0hrs, 0min, 3secs.
+recuperacion | entrenamiento=0.83793667 | validación=0.84509671 | conexiones=1 | neuronas=2 | lambda=0
+Epochs: [########............] 1600/4000 (40.00%) Remaining: 0hrs, 0min, 2secs.
+aceptacion | entrenamiento=0.8379198 | validación=0.84453797 | conexiones=1 | neuronas=2 | lambda=0 | aceptado:dentro_de_tolerancias | aisladas=
+Epochs: [########............] 1678/4000 (41.95%) Remaining: 0hrs, 0min, 2secs.
+entrenamiento | entrenamiento=0.83798995 | validación=0.84513469 | conexiones=1 | neuronas=2 | lambda=0
+Epochs: [##########..........] 2000/4000 (50.00%) Remaining: 0hrs, 0min, 2secs.
+entrenamiento | entrenamiento=0.83791363 | validación=0.84509116 | conexiones=1 | neuronas=2 | lambda=0
+Epochs: [############........] 2400/4000 (60.00%) Remaining: 0hrs, 0min, 1secs.
+entrenamiento | entrenamiento=0.83789113 | validación=0.84500997 | conexiones=1 | neuronas=2 | lambda=0
+Epochs: [##############......] 2800/4000 (70.00%) Remaining: 0hrs, 0min, 1secs.
+entrenamiento | entrenamiento=0.83780085 | validación=0.84499314 | conexiones=1 | neuronas=2 | lambda=0
+Epochs: [################....] 3200/4000 (80.00%) Remaining: 0hrs, 0min, 1secs.
+DRANN vectorial: menos de dos participantes

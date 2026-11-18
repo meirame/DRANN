@@ -1,0 +1,31 @@
+DRANN vectorial | celsius | Fahrenheit, Kelvin
+Historial: /tmp/DRANN-vectorial.480m2O/results/celsius_seed43_pressure
+entrenamiento | entrenamiento=10.107753 | validación=10.804638 | conexiones=3 | neuronas=3 | lambda=0
+Epochs: [....................] 0/4000 (0.00%) Remaining: --
+entrenamiento | entrenamiento=0.40701969 | validación=0.21737501 | conexiones=3 | neuronas=3 | lambda=0
+Epochs: [##..................] 400/4000 (10.00%) Remaining: 0hrs, 0min, 1secs.
+entrenamiento | entrenamiento=0.072720583 | validación=0.032054564 | conexiones=3 | neuronas=3 | lambda=0
+Epochs: [####................] 800/4000 (20.00%) Remaining: 0hrs, 0min, 1secs.
+entrenamiento | entrenamiento=0.031712906 | validación=0.0088474792 | conexiones=3 | neuronas=3 | lambda=0
+Epochs: [######..............] 1200/4000 (30.00%) Remaining: 0hrs, 0min, 1secs.
+entrenamiento | entrenamiento=0.024179862 | validación=0.0034121894 | conexiones=3 | neuronas=3 | lambda=0
+Epochs: [########............] 1600/4000 (40.00%) Remaining: 0hrs, 0min, 1secs.
+presion | entrenamiento=0.022607939 | validación=0.0021749827 | conexiones=3 | neuronas=3 | lambda=5e-06 | inicio_presion | aisladas=
+Epochs: [#########...........] 1885/4000 (47.12%) Remaining: 0hrs, 0min, 1secs.
+presion | entrenamiento=0.022273185 | validación=0.001876898 | conexiones=3 | neuronas=3 | lambda=0.00058
+Epochs: [##########..........] 2000/4000 (50.00%) Remaining: 0hrs, 0min, 1secs.
+presion | entrenamiento=0.021498134 | validación=0.0011922363 | conexiones=3 | neuronas=3 | lambda=0.001
+Epochs: [############........] 2400/4000 (60.00%) Remaining: 0hrs, 0min, 1secs.
+presion | entrenamiento=0.021049203 | validación=0.00080743274 | conexiones=3 | neuronas=3 | lambda=0.001
+Epochs: [##############......] 2800/4000 (70.00%) Remaining: 0hrs, 0min, 1secs.
+presion | entrenamiento=0.02076915 | validación=0.00057315813 | conexiones=3 | neuronas=3 | lambda=0.001
+Epochs: [################....] 3200/4000 (80.00%) Remaining: 0hrs, 0min, 1secs.
+presion | entrenamiento=0.020586285 | validación=0.00042398872 | conexiones=3 | neuronas=3 | lambda=0.001
+Epochs: [##################..] 3600/4000 (90.00%) Remaining: 0hrs, 0min, 1secs.
+restauracion | entrenamiento=0.022614605 | validación=0.0021771212 | conexiones=3 | neuronas=3 | lambda=0 | restaurado:sin_reduccion | aisladas=
+Epochs: [###################.] 3884/4000 (97.10%) Remaining: 0hrs, 0min, 1secs.
+entrenamiento | entrenamiento=0.022271075 | validación=0.0018702746 | conexiones=3 | neuronas=3 | lambda=0
+Epochs: [####################] 4000/4000 (100.00%) Completed.
+Entrada 10 | Ideal (50, 283.15) | Puntos 0:(54.1591296, 279.070378) 1:(49.9603985, 285.322308) 2:(50.228695, 283.637866)
+Entrada 70 | Ideal (158, 343.15) | Puntos 0:(164.3068, 342.959833) 1:(153.236738, 344.724795) 2:(155.256953, 342.278707)
+Duración: 0hrs 0min 0s 434ms

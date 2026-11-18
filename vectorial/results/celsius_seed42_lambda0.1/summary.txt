@@ -1,0 +1,10 @@
+work_epochs=4000
+model_epoch=2339
+elapsed_s=0.439702437
+attempts=1
+participants=3
+connections=3
+validation_loss=0.0025307618810816164
+validation_worst_point=0.077496614037885811
+best_predictive_work=2361
+best_predictive_validation=0.0024979987074957976
