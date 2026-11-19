@@ -194,3 +194,42 @@ Separar transferencias con N fijo de añadir neuronas. Investigar si el exceso d
 La constante tiene una representación geométrica sencilla, pero sus representantes pueden contribuir al cálculo inmanente. No eliminarlas ni suponerlas donantes solo por ese motivo.
 
 Véase [Experimento C* → (F*, 1)](docs/experimentos/celsius-fahrenheit-constante.md) para el protocolo, controles, medidas y límites.
+
+
+## TODO — swap y eliminación; primero experimento sincos
+
+Fecha de registro: 19 de noviembre de 2026.
+
+**Decisión actual:** aparcar la transformación de ejes mediante centrado/estandarización que se acaba de explorar. El siguiente trabajo será adaptar el laboratorio para estimar seno y coseno. Mejorar swap y eliminación queda pendiente para después de esa adaptación.
+
+### Terminología acordada
+
+**Swap**: cambio de especialización de una neurona desde un núcleo/pozo o congregación donante hacia otro subcongregado, que necesita más neuronas. El nombre no exige intercambiar dos neuronas en sentidos opuestos.
+
+### Próximo paso
+
+- [ ] Preparar la adaptación del código existente a entrada x y salida ordenada (sin(x), cos(x)), conservando un eje por magnitud y dos pozos: (sin(x), 0) y (0, cos(x)). Primero concretar dataset, rango y activación inmanente con el usuario; las funciones seno y coseno generan etiquetas, no sustituyen el forward aprendido.
+- [ ] Mantener separadas las mediciones de estimación geométrica y lectura de congregaciones para comparar con el laboratorio de temperaturas.
+
+### Pendiente después: mejorar el swap
+
+- [ ] Detectar donantes con precisión suficiente y estable y candidatas realmente sustituibles; no identificar sobrecongregación solo por contar neuronas.
+- [ ] Detectar receptores que necesiten capacidad, distinguiendo subcongregación de otros bloqueos del aprendizaje.
+- [ ] Mejorar la selección de candidata y su reajuste previo usando potenciales inmanentes y objetivos de entrenamiento del receptor; verificarlo en varios ejemplos.
+- [ ] Ensayar en copia, permitir recuperación y aceptar solo si el donante conserva precisión/cobertura y el receptor mejora; restaurar en caso contrario.
+- [ ] Registrar reparto, errores por magnitud y cambios de especialización antes y después de cada swap, sin exigir poblaciones iguales.
+
+### Pendiente después: eliminación de neuronas
+
+- [ ] Investigar si retirar representantes de una congregación excesiva mejora la estimación y la estabilidad; considerar simultáneamente utilidad inmanente y trascendente.
+- [ ] Comparar exclusión de la lectura, aislamiento interno y eliminación completa como intervenciones distintas.
+- [ ] Aplicar compensación/reajuste cuando sea necesario, un simulacro reversible, recuperación y restauración si se pierde precisión.
+- [ ] Medir resultados por propiedad, calidad de la lectura y coste; no aceptar una reducción únicamente porque disminuye N.
+
+### Motivación y límites de la evidencia
+
+El usuario observa estimaciones de K* que considera buenas y sospecha que el exceso de representantes, especialmente alrededor de F*, empeora las estimaciones. La batería recibida respalda que, con una semilla y normalización compartida, dos neuronas pueden superar a cinco o diez, y que la inicialización favorece a F. No prueba que la sobrecongregación sea la única causa ni que eliminar neuronas garantice una mejora; esos son objetivos de los TODO anteriores.
+
+La batería de 17 ejecuciones utilizó F/373.15 y K/373.15. El laboratorio interactivo ya utiliza divisores independientes F/212 y K/373.15; el usuario indica que esa configuración tampoco resuelve suficientemente el problema. Conservar esa distinción al comparar resultados.
+
+Este cambio solo registra prioridades y trabajo pendiente. No implementa swap, eliminación ni la adaptación sincos.
