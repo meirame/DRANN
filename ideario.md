@@ -2,6 +2,10 @@
 
 Registro de propuestas para explorar en el futuro. Una idea incluida aquí no modifica por sí sola la arquitectura vigente ni autoriza su implementación.
 
+**Actualización del 19 de noviembre de 2026:** el alcance actual del primer laboratorio está en [Laboratorio inicial con Godot: C → (F, K)](docs/laboratorio-godot-fk.md). Incluye Godot desde el principio, potenciales inmanentes vectoriales y tiro directo. Para cada ejemplo, F y K definen dos pozos situados sobre sus respectivos ejes: $(F^*,0)$ y $(0,K^*)$.
+
+Las secciones anteriores en el tiempo se conservan como registro histórico; sus propuestas de inicialización no sustituyen las decisiones pendientes del documento del laboratorio.
+
 ## 1. Entrenamiento desde el cognifenómeno ideal hacia la inmanencia
 
 Fecha de registro: 18 de noviembre de 2026.
@@ -140,10 +144,27 @@ Un origen geométrico fijo, calculado a partir del entrenamiento, es una referen
 - Medir precisión por componente, cobertura, estabilidad y consecuencias de eliminar representantes.
 - No interpretar proximidad geométrica como falta de utilidad ni exigir eliminar grupos que cooperan en estimar una propiedad.
 
-## Aclaraciones posteriores del camino activo
+## Aclaraciones del 18 de noviembre — registro histórico
 
 - El origen transcendente propuesto es el centro de los núcleos ideales de todos los ejemplos de **entrenamiento**, calculado una vez con la normalización elegida y conservado al validar. No recalcularlo con el ideal de un ejemplo nuevo ni con las etiquetas de validación.
 - Los sesgos transcendentes se inicializarían a cero respecto a ese origen y seguirían siendo aprendibles.
 - Se mantiene la penalización por núcleos ideales sin representantes, además del acercamiento de las posiciones a núcleos.
 - Las congregaciones pueden ser grupos cooperativos especializados. Ni compartir núcleo prueba inutilidad ni quedar fuera de un núcleo prueba ausencia de contribución interna.
 - Está en discusión si prescindir de activaciones explícitas en ambos planos. Todavía no se ha tomado una decisión de implementación sobre ello. Seleccionar transmisoras por módulos ya introduce decisiones no lineales, pero no se ha demostrado que sean suficientes para las tareas deseadas.
+
+
+## 3. Primer laboratorio con Godot
+
+Fecha de registro: 19 de noviembre de 2026.
+
+**Estado: alcance acordado para la próxima implementación; todavía no implementado por este documento.**
+
+- Usaremos Godot desde el primer código de este nuevo diseño, una tarea sencilla C → (F, K) y pocas neuronas, como laboratorio para testear variantes.
+- Cada componente tiene su eje y su pozo: $\vec{\xi}_F=(F^*,0)$ y $\vec{\xi}_K=(0,K^*)$. No se agrupan ambas magnitudes en un único pozo $(F^*,K^*)$.
+- La normalización se recoge con un máximo compartido entre F y K, calculado en entrenamiento y mantenido al validar.
+- El potencial inmanente es vectorial; los pesos transcendentes producen un tiro directo. Los pozos gaussianos orientan el aprendizaje, sin un campo iterativo durante la predicción.
+- La cobertura de los dos pozos, la especialización y la precisión se comprobarán antes de incorporar eyección, crecimiento o eliminación.
+- El número de componentes del potencial, la pérdida completa, la inicialización, la lectura de la respuesta y la integración técnica con Godot siguen por concretar.
+- Se prefiere una inicialización transcendente dispersa según la geometría de entrenamiento; esto sustituye la propuesta histórica de todos los sesgos a cero en el mismo origen. Su procedimiento exacto sigue pendiente.
+
+Véase [el documento del laboratorio](docs/laboratorio-godot-fk.md) para las ecuaciones, el caso de pozos coincidentes en cero y el alcance previsto.
