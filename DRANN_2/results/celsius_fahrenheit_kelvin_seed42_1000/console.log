@@ -1,0 +1,67 @@
+DRANN | Celsius -> pozos Fahrenheit / Kelvin
+Training will start.
+------------------------------------------------
+Epoch -> 0 / 1000
+Training Loss: 0.702120395 | Validation Loss: 0.7192433929
+Active connections: 10 | Participating neurons: 5 | Steps: 4
+Epochs: [....................] 0/1000 (0.00%) Remaining: --
+------------------------------------------------
+Epoch -> 100 / 1000
+Training Loss: 0.03717969481 | Validation Loss: 0.01532087991
+Active connections: 9 | Participating neurons: 5 | Steps: 4
+Epochs: [##..................] 100/1000 (10.00%) Remaining: 0hrs, 0min, 1secs.
+------------------------------------------------
+Epoch -> 200 / 1000
+Training Loss: 0.006781871757 | Validation Loss: 0.001693731164
+Active connections: 9 | Participating neurons: 5 | Steps: 4
+Epochs: [####................] 200/1000 (20.00%) Remaining: 0hrs, 0min, 1secs.
+------------------------------------------------
+Epoch -> 300 / 1000
+Training Loss: 0.002862752675 | Validation Loss: 0.001146898259
+Active connections: 9 | Participating neurons: 5 | Steps: 4
+Epochs: [######..............] 300/1000 (30.00%) Remaining: 0hrs, 0min, 1secs.
+------------------------------------------------
+Epoch -> 400 / 1000
+Training Loss: 0.00219730708 | Validation Loss: 0.001072124225
+Active connections: 9 | Participating neurons: 5 | Steps: 4
+Epochs: [########............] 400/1000 (40.00%) Remaining: 0hrs, 0min, 1secs.
+------------------------------------------------
+Epoch -> 500 / 1000
+Training Loss: 0.002189213746 | Validation Loss: 0.001021973371
+Active connections: 9 | Participating neurons: 5 | Steps: 4
+Epochs: [##########..........] 500/1000 (50.00%) Remaining: 0hrs, 0min, 1secs.
+------------------------------------------------
+Epoch -> 600 / 1000
+Training Loss: 0.001478240374 | Validation Loss: 0.0008279915027
+Active connections: 9 | Participating neurons: 5 | Steps: 4
+Epochs: [############........] 600/1000 (60.00%) Remaining: 0hrs, 0min, 1secs.
+------------------------------------------------
+Epoch -> 700 / 1000
+Training Loss: 0.001123250978 | Validation Loss: 0.0006536242125
+Active connections: 9 | Participating neurons: 5 | Steps: 4
+Epochs: [##############......] 700/1000 (70.00%) Remaining: 0hrs, 0min, 1secs.
+------------------------------------------------
+Epoch -> 800 / 1000
+Training Loss: 0.001980147051 | Validation Loss: 0.0005217108309
+Active connections: 9 | Participating neurons: 5 | Steps: 4
+Epochs: [################....] 800/1000 (80.00%) Remaining: 0hrs, 0min, 1secs.
+------------------------------------------------
+Epoch -> 900 / 1000
+Training Loss: 0.0007686258254 | Validation Loss: 0.0003338074517
+Active connections: 9 | Participating neurons: 5 | Steps: 4
+Epochs: [##################..] 900/1000 (90.00%) Remaining: 0hrs, 0min, 1secs.
+------------------------------------------------
+Epoch -> 1000 / 1000
+Training Loss: 0.0006370550375 | Validation Loss: 0.0002605798568
+Active connections: 9 | Participating neurons: 5 | Steps: 4
+Epochs: [####################] 1000/1000 (100.00%) Completed.
+Validation input: 10.000000 Celsius
+Axis 0 | válido | prediction: 44.5966 | ideal: 50 | E_k distance²: 7.11393e-06 | members: 2 4 1 3 
+Axis 1 | válido | prediction: 280.838 | ideal: 283.15 | E_k distance²: 3.83804e-05 | members: 0 
+Validation input: 70.000000 Celsius
+Axis 0 | válido | prediction: 158.243 | ideal: 158 | E_k distance²: 1.99776e-09 | members: 1 3 2 4 
+Axis 1 | válido | prediction: 343.668 | ideal: 343.15 | E_k distance²: 1.92666e-06 | members: 0 
+Axis 0 | valid readings: 2/2 | RMSE physical: 3.82464
+Axis 1 | valid readings: 2/2 | RMSE physical: 1.67517
+Training has finished. Final y mejor modelo guardados en results/celsius_fahrenheit_kelvin_seed42_1000
+Total training duration: 0hrs 0min 0s 118ms

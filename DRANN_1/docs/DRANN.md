@@ -1,6 +1,6 @@
 # Especificación de DRANN, primera versión
 
-Estado: diseño documentado; todavía no se ha implementado la DRANN. Esta especificación recoge las decisiones de la conversación hasta el 17 de noviembre de 2026 y distingue las propuestas no confirmadas.
+Estado actual: la lectura geométrica de Celsius a (Fahrenheit, Kelvin) está en `DRANN_C_F.cpp`, con pruebas en `tests/DRANN_tests.cpp`. Esta especificación recoge las decisiones de la conversación hasta el 17 de noviembre de 2026 y distingue acuerdos de elecciones de implementación. Los resultados iniciales están en [experiment-v1.md](experiment-v1.md).
 
 ## 1. Propósito y alcance
 
@@ -99,7 +99,10 @@ La señal no se reparte como un caudal entre destinatarias, no se descuenta de l
 
 El forward termina cuando no queda ninguna transmisora local válida. No es necesario que todas las neuronas hayan transmitido. No hay condición de parada aprendida. Cada paso productivo retira al menos una neurona, por lo que el número de pasos productivos está acotado por el número inicial de participantes.
 
-## 5. Cognifenómenos y pérdida
+## 5. Cognifenómenos y pérdida escalar de referencia
+
+Esta sección describe v1. La salida y pérdida vectoriales actuales, junto con su backward, se especifican en [experiment-celsius-fahrenheit-kelvin.md](experiment-celsius-fahrenheit-kelvin.md). El potencial por neurona y la dinámica interna de las secciones anteriores siguen siendo escalares. La nueva señal geométrica sustituye la derivada escalar final de la sección 6, sin sumarla de nuevo.
+
 
 El **cognifenómeno primitivo** del caso escalar es el conjunto de puntos con multiplicidad formado por los últimos potenciales de las neuronas de `A_ej`. Cuenta cada neurona participante por igual, incluidas las retiradas. Si varios potenciales coinciden, sus aportaciones no se deduplican.
 
@@ -180,12 +183,20 @@ Después de cada época, volver a evaluar los ocho ejemplos de entrenamiento y l
 
 Registrar las curvas para observar posibles indicios de sobreajuste. Dos ejemplos de validación no permiten determinar con precisión cuándo deja de generalizar. Mantener las cien épocas; no se ha acordado parada temprana ni reducción automática de `lr`.
 
-Propuesta de temperaturas todavía no confirmada expresamente:
+Temperaturas utilizadas como elección inicial de implementación, a partir de la propuesta de la conversación:
 
 - Entrenamiento Celsius: `{-40, -20, 0, 20, 40, 60, 80, 100}`.
 - Validación Celsius: `{10, 70}`.
 
-El usuario confirmó la normalización, pero no seleccionó explícitamente esas diez temperaturas. También siguen sin fijarse la semilla y si se barajan los ejemplos entre épocas. Documentar lo que se elija al concretar el experimento.
+El usuario confirmó la normalización, pero no seleccionó explícitamente esas diez temperaturas. Se utilizan para concretar el experimento autorizado. La implementación emplea semilla `42` y orden fijo, sin barajado. Son elecciones reproducibles, visibles en `main()`, no requisitos matemáticos del modelo.
+
+### 7.1 Variante local con 40 temperaturas
+
+Esta variante amplía el dataset inicial con 30 valores y usa una partición fija de 32 ejemplos de entrenamiento y 8 de validación. La configuración actual de `DRANN_C_F.cpp` ejecuta los 10 ejemplos del apartado anterior con 2 neuronas, `lr = 0.001` y una meta inicial de 100 000 épocas.
+
+Elección de implementación: temperaturas de −40 a 100 °C en incrementos de 4 °C, junto con 10, 30, 50 y 70 °C. Se reservan para validación `{-28, -8, 10, 30, 50, 70, 84, 96}`; las otras 32 se entrenan en orden creciente, sin barajado. Así se mantienen los diez valores originales en sus conjuntos respectivos y no hay solapamiento entre entrenamiento y validación.
+
+La variante usa la relación `F = 1.8*C + 32`, la normalización por 100, 5 neuronas, la semilla 42, `lr = 0.005` y las mismas reglas del modelo. Para esa partición se evalúan los 32 ejemplos de entrenamiento y los 8 de validación después de cada época. El número de épocas se elige con `--epochs`; el contador comienza en 1 y la evaluación inicial corresponde a 0. El refresco de la gráfica se controla por separado mediante «Épocas por actualización».
 
 ## 8. Referencia de implementación y estado del trabajo
 
@@ -193,9 +204,19 @@ La referencia estética y estructural es [XOR.cpp](reference/XOR.cpp), proporcio
 
 Se busca una implementación manual legible: `struct`, vectores, cachés, bucles, funciones de pérdida y derivadas explícitas, métodos separados y configuración sencilla en `main()`. Las instrucciones de estilo y comprobación están en [AGENTS.md](../AGENTS.md).
 
-La preferencia inicial es comenzar con un único `.cpp`. Formato de resultados, versión mínima de C++, sistema de compilación y semilla son elecciones de implementación todavía no fijadas. No hay aún ejecutable, métricas de aprendizaje ni pruebas realizadas sobre una implementación DRANN.
+La implementación comienza con un único `.cpp` de producción y utiliza C++17 y la biblioteca estándar. Se compila directamente con `g++`, sin un sistema de construcción adicional. El historial se guarda en `training_history.csv`: evaluación inicial (época 0) y cien evaluaciones posteriores. La salida por terminal muestra los puntos individuales del cognifenómeno primitivo de validación en Fahrenheit; no introduce un promedio como nueva definición de predicción.
 
-Antes de implementar conviene precisar también el alcance de la anulación en los pesos de entrada: la regla irreversible se confirmó explícitamente para las conexiones internas simétricas. No extenderla silenciosamente a los pesos de entrada ni convertirla en un recorte permanente de todos los parámetros.
+El usuario aclaró que desea gráficas nativas C++ durante el entrenamiento. `run_drann.sh` compila mediante CMake y abre `drann_gui`, con ImPlot, Dear ImGui y GLFW/OpenGL. La función de entrenamiento notifica la evaluación inicial y cada época completada; la ventana representa ambos errores, permite pausa, escala logarítmica y agrupación de épocas por fotograma. El modelo sigue siendo C++ manual y la consola no necesita dependencias gráficas. El callback no modifica el cálculo y puede solicitar la cancelación entre épocas; cerrar la ventana conserva el CSV hasta la última evaluación. La visualización Python previa fue sustituida. El número de épocas puede elegirse con `--epochs 1000` sin modificar la configuración del archivo.
+
+La regla irreversible se confirmó explícitamente para las conexiones internas simétricas. En esta implementación no se extiende a los pesos de entrada: son parámetros ordinarios del gradiente y pueden cambiar de signo. Esta decisión de alcance está documentada para que no se confunda con un recorte permanente de todos los parámetros.
+
+El programa no define una recuperación para el aislamiento total. Si encuentra un cognifenómeno vacío, termina con un error explícito en lugar de dividir entre cero, devolver un acierto o inventar una pérdida. Se comprueba esta frontera sin añadir un tratamiento matemático al modelo.
+
+### Logs de terminal
+
+Por petición del usuario, `DRANN_C_F.cpp` adopta la presentación de `satellite_CNN_HL5.cpp`: cabeceras y resultados blancos, detalles y duraciones grises, progreso y éxitos verdes, avisos y esperas amarillos y errores rojos. La barra de `#` y `.` muestra épocas, porcentaje y tiempo restante. Se fija abajo cuando la terminal Unix dispone de espacio suficiente; en otros casos se imprime en los resúmenes. Se conserva la frecuencia aproximada de diez resúmenes por tramo y se muestran siempre la evaluación inicial y la última, incluso si el usuario detiene antes.
+
+Los resúmenes muestran ambas pérdidas en una línea y las conexiones activas, neuronas participantes y pasos medios de validación en otra, sin tiempos ni `lr` entre épocas. Las duraciones finales se miden con reloj monotónico y los milisegundos se calculan desde la duración real. La estimación al continuar considera las épocas ejecutadas en ese tramo. La salida redirigida queda libre de secuencias ANSI; `NO_COLOR` permite desactivar los colores en una terminal. La presentación conserva el CSV y sus evaluaciones, las reglas matemáticas, la configuración local y los mecanismos existentes de parada y continuación. No incorpora los cambios de tasa ni los checkpoints del archivo de referencia.
 
 ## 9. Propuestas reemplazadas o descartadas para v1
 
@@ -213,6 +234,14 @@ Antes de implementar conviene precisar también el alcance de la anulación en l
 
 Repositorio privado: `https://github.com/meirame/DRANN`. Carpeta preparada por el usuario: `/home/luis/personal/DRANN`.
 
-Este chat remoto no tiene acceso directo a esa carpeta. El flujo acordado es trabajar aquí, publicar cambios en GitHub mediante ramas y pull requests, y descargar la rama correspondiente en el ordenador local. Un `pull` en `main` no incorpora cambios de una rama todavía no fusionada.
+La preferencia actual del usuario es trabajar y ejecutar la DRANN en su ordenador local, y subir después los cambios y resultados a GitHub mediante ramas y pull requests. La guía está en [LOCAL.md](LOCAL.md). El código actual está en `feature/drann-v1`; un `pull` en `main` no incorpora cambios de una rama todavía no fusionada.
+
+Este chat remoto no tiene acceso directo a la carpeta local ni puede cambiar de equipo de ejecución mediante las herramientas disponibles. Para completar el traslado hay que abrir esa carpeta como proyecto local en Codex y retomar allí el trabajo con estos documentos.
 
 Estos archivos preservan el contexto del proyecto, no una copia literal ni una sincronización del historial de conversación. Al retomar desde otro chat, leer esta especificación y `AGENTS.md`, revisar el estado real del repositorio y continuar desde lo ya implementado.
+
+## 11. Lectura vectorial vigente
+
+La implementación actual conserva el rizoma escalar y añade posiciones aprendibles `q[i,k]=alpha[i,k]*V_last[i]+beta[i,k]`, con identidad geométrica, alpha inicial 1 y beta inicial 0. El ideal es un único punto ordenado (Fahrenheit, Kelvin), normalizado por 100 en ambas coordenadas. La pérdida promedia participantes y suma coordenadas sin dividir por D. Los gradientes de lectura, el control D=1 congelado, las pruebas y la primera ejecución están documentados en [el experimento vectorial](experiment-celsius-fahrenheit-kelvin.md).
+
+Se conserva la configuración local de 3 neuronas, lr 0.001, semilla 42 y meta por defecto de 100000 épocas. La verificación registrada usa explícitamente 1000 épocas. Se mantienen los 8 ejemplos de entrenamiento y 2 de validación. El nuevo historial se llama `training_history_fk.csv`; los historiales escalares anteriores se conservan. Esta entrega no añade reducción de neuronas, Adam ni Godot.

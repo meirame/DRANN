@@ -1,0 +1,86 @@
+DRANN | Celsius -> (Fahrenheit, Kelvin)
+------------------------------------------------
+Neurons: 3 | Seed: 42 | lr: 0.001 | Epochs: 1000
+Weights have been initialized.
+------------------------------------------------
+Training will start.
+Training samples: 8 | Validation samples: 2
+------------------------------------------------
+Epoch -> 0 / 1000.
+Training Loss: 8.494602681 | Validation Loss: 8.771584047
+Active connections: 3 | Participating neurons: 3 | Steps: 2
+Coordinate Loss (F, K): Training = (0.6686171859, 7.825985495) | Validation = (0.673966095, 8.097617952)
+Epochs: [....................] 0/1000 (0.00%) Remaining: --
+------------------------------------------------
+Epoch -> 100 / 1000.
+Training Loss: 0.5267805476 | Validation Loss: 0.2474261649
+Active connections: 3 | Participating neurons: 3 | Steps: 2
+Coordinate Loss (F, K): Training = (0.324875393, 0.2019051546) | Validation = (0.104096698, 0.1433294669)
+Epochs: [##..................] 100/1000 (10.00%) Remaining: 0hrs, 0min, 1secs.
+------------------------------------------------
+Epoch -> 200 / 1000.
+Training Loss: 0.426447427 | Validation Loss: 0.1867604035
+Active connections: 3 | Participating neurons: 3 | Steps: 2
+Coordinate Loss (F, K): Training = (0.2610128778, 0.1654345491) | Validation = (0.08793582828, 0.09882457519)
+Epochs: [####................] 200/1000 (20.00%) Remaining: 0hrs, 0min, 1secs.
+------------------------------------------------
+Epoch -> 300 / 1000.
+Training Loss: 0.3900028521 | Validation Loss: 0.1823209164
+Active connections: 3 | Participating neurons: 3 | Steps: 2
+Coordinate Loss (F, K): Training = (0.2377897403, 0.1522131117) | Validation = (0.08364661424, 0.09867430218)
+Epochs: [######..............] 300/1000 (30.00%) Remaining: 0hrs, 0min, 1secs.
+------------------------------------------------
+Epoch -> 400 / 1000.
+Training Loss: 0.3595152152 | Validation Loss: 0.1770789472
+Active connections: 3 | Participating neurons: 3 | Steps: 2
+Coordinate Loss (F, K): Training = (0.2179957815, 0.1415194336) | Validation = (0.07731863815, 0.09976030909)
+Epochs: [########............] 400/1000 (40.00%) Remaining: 0hrs, 0min, 1secs.
+------------------------------------------------
+Epoch -> 500 / 1000.
+Training Loss: 0.3920773308 | Validation Loss: 0.1921678918
+Active connections: 3 | Participating neurons: 3 | Steps: 2
+Coordinate Loss (F, K): Training = (0.1966720649, 0.1954052659) | Validation = (0.07663871664, 0.1155291752)
+Epochs: [##########..........] 500/1000 (50.00%) Remaining: 0hrs, 0min, 1secs.
+------------------------------------------------
+Epoch -> 600 / 1000.
+Training Loss: 0.3499631975 | Validation Loss: 0.1398061482
+Active connections: 3 | Participating neurons: 3 | Steps: 2
+Coordinate Loss (F, K): Training = (0.1833796063, 0.1665835912) | Validation = (0.05715497439, 0.08265117376)
+Epochs: [############........] 600/1000 (60.00%) Remaining: 0hrs, 0min, 1secs.
+------------------------------------------------
+Epoch -> 700 / 1000.
+Training Loss: 0.3244344154 | Validation Loss: 0.1260952104
+Active connections: 3 | Participating neurons: 3 | Steps: 2
+Coordinate Loss (F, K): Training = (0.1699497991, 0.1544846164) | Validation = (0.05080227492, 0.07529293553)
+Epochs: [##############......] 700/1000 (70.00%) Remaining: 0hrs, 0min, 1secs.
+------------------------------------------------
+Epoch -> 800 / 1000.
+Training Loss: 0.3010425362 | Validation Loss: 0.114586114
+Active connections: 3 | Participating neurons: 3 | Steps: 2
+Coordinate Loss (F, K): Training = (0.1562386684, 0.1448038677) | Validation = (0.04481989065, 0.06976622333)
+Epochs: [################....] 800/1000 (80.00%) Remaining: 0hrs, 0min, 1secs.
+------------------------------------------------
+Epoch -> 900 / 1000.
+Training Loss: 0.2172326077 | Validation Loss: 0.08766200375
+Active connections: 3 | Participating neurons: 3 | Steps: 2
+Coordinate Loss (F, K): Training = (0.09315535334, 0.1240772543) | Validation = (0.03775192951, 0.04991007424)
+Epochs: [##################..] 900/1000 (90.00%) Remaining: 0hrs, 0min, 1secs.
+------------------------------------------------
+Epoch -> 1000 / 1000.
+Training Loss: 0.1821277708 | Validation Loss: 0.07366940597
+Active connections: 3 | Participating neurons: 3 | Steps: 2
+Coordinate Loss (F, K): Training = (0.09371489043, 0.08841288035) | Validation = (0.03804936819, 0.03562003778)
+Epochs: [####################] 1000/1000 (100.00%) Completed.
+Total training duration: 0hrs 0min 0s 18ms
+Training has finished.
+Validation results:
+Input (C): 10 | Ideal (F, K): (50, 283.15)
+Cognifenomeno primitivo (physical): [(64.35626461, 255.5827268), (73.42220144, 273.8090167), (72.21138462, 263.6741805)]
+Coordinate Loss: (0.04160158203, 0.04088386889) | Total Loss: 0.08248545092 | Steps: 2
+------------------------------------------------
+Input (C): 70 | Ideal (F, K): (158, 343.15)
+Cognifenomeno primitivo (physical): [(148.9692719, 365.0372092), (133.6359945, 351.0889886), (139.0327699, 362.3491858)]
+Coordinate Loss: (0.03449715435, 0.03035620666) | Total Loss: 0.06485336102 | Steps: 2
+------------------------------------------------
+Final validation duration: 0hrs 0min 0s 0ms
+History saved in training_history_fk.csv.

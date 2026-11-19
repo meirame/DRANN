@@ -3,9 +3,10 @@
 ## Contexto y alcance
 
 - Leer `docs/DRANN.md` antes de implementar o modificar el modelo. Distingue acuerdos, propuestas y detalles pendientes.
-- La tarea que introduce estos archivos es conservar el contexto del diseño; no introduce aún una implementación de la DRANN. Una solicitud posterior de implementación autoriza avanzar dentro del alcance acordado, sin añadir una aprobación adicional por este archivo.
+- La primera implementación está en `DRANN_C_F.cpp`; `tests/DRANN_tests.cpp` incluye ese archivo con `DRANN_NO_MAIN` para comprobar el mismo núcleo sin duplicarlo. Leer también el README y `docs/experiment-v1.md` para compilar y conocer los resultados observados. Las solicitudes claras de implementación autorizan avanzar dentro del alcance acordado, sin añadir una aprobación adicional por este archivo.
 - El núcleo se implementará desde cero en C++, incluidos forward, backward y actualización de parámetros. No usar PyTorch, LibTorch ni otro framework de redes neuronales o autodiferenciación.
 - Primero obtener un ejecutable de consola. Godot es secundario y se integrará después; no añadir ahora GDExtension ni dependencias de Godot.
+- `run_drann.sh` compila y abre `drann_gui`: interfaz nativa C++ con ImPlot, Dear ImGui y GLFW/OpenGL. No requiere Python ni Matplotlib. `DRANN_C_F.cpp` sigue compilando como consola sin dependencias gráficas. La gráfica recibe métricas por época y no altera los parámetros. Preservar los ajustes locales de configuración; `--epochs` permite cambiar las épocas sin editar el archivo.
 - No introducir cambios matemáticos de forma implícita. Documentar las decisiones nuevas y distinguirlas de lo que ya pidió el usuario. Resolver las elecciones rutinarias de implementación con criterio, sin convertirlas en permisos innecesarios.
 
 ## Estilo solicitado
@@ -44,5 +45,13 @@ La referencia del usuario es `docs/reference/XOR.cpp`, conservada sin modificaci
 
 - Actualizar la especificación cuando el usuario cambie el diseño. No reintroducir propuestas descartadas como si siguieran aprobadas.
 - El repositorio privado es `meirame/DRANN`. Trabajar mediante ramas y pull requests según el flujo acordado; no fusionar sin una instrucción que lo autorice.
+- La preferencia actual del usuario es desarrollar y ejecutar el proyecto localmente, y publicar después los cambios y resultados en GitHub. Leer `docs/LOCAL.md` al retomar desde un chat local.
 - La carpeta local del usuario es `/home/luis/personal/DRANN`. Un chat remoto puede ejecutarse en `/workspace`; no fingir acceso al disco local ni crear esa ruta aquí como sustituto.
 - Git sincroniza archivos, no el historial literal de los chats. Estos documentos sirven como contexto portable.
+- Guardar cada experimento que se quiera publicar en una carpeta propia de `results/`, con su historial y metadatos. Distinguir los resultados obtenidos localmente de la referencia verificada antes del traslado. Añadir al commit solo los archivos pertinentes y conservar las ejecuciones previas.
+
+## Lectura geométrica vectorial vigente
+
+- Leer `docs/experiment-celsius-fahrenheit-kelvin.md` antes de modificar la lectura. Los potenciales siguen siendo escalares y las posiciones `q=alpha*V_last+beta` son vectoriales; no usar q para seleccionar transmisoras.
+- Alpha inicial 1, beta inicial 0, ambos aprendibles por SGD y sin anulación por signo. La pérdida promedia participantes y suma coordenadas ordenadas (F,K), sin dividir por D. La señal geométrica sustituye la antigua derivada de pérdida escalar.
+- Mantener el control D=1 con geometría congelada, las pruebas de gradientes y la evaluación sin cambios de parámetros. Preservar historiales escalares; la consola y la GUI actuales escriben `training_history_fk.csv`.
