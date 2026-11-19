@@ -2,7 +2,7 @@
 
 Registro de propuestas para explorar en el futuro. Una idea incluida aquí no modifica por sí sola la arquitectura vigente ni autoriza su implementación.
 
-**Actualización del 19 de noviembre de 2026:** el alcance actual del primer laboratorio está en [Laboratorio inicial con Godot: C → (F, K)](docs/laboratorio-godot-fk.md). Incluye Godot desde el principio, potenciales inmanentes vectoriales y tiro directo. Para cada ejemplo, F y K definen dos pozos situados sobre sus respectivos ejes: $(F^*,0)$ y $(0,K^*)$.
+**Actualización del 19 de noviembre de 2026:** el alcance actual del primer laboratorio está en [Laboratorio inicial con Godot: C → (F, K)](docs/laboratorio-godot-fk.md). Incluye Godot desde el principio. La revisión actual usa potencial inmanente escalar y atracción trascendente afín. Para cada ejemplo, F y K definen dos pozos situados sobre sus respectivos ejes: $(F^*,0)$ y $(0,K^*)$.
 
 Las secciones anteriores en el tiempo se conservan como registro histórico; sus propuestas de inicialización no sustituyen las decisiones pendientes del documento del laboratorio.
 
@@ -162,10 +162,10 @@ Fecha de registro: 19 de noviembre de 2026.
 - Usaremos Godot desde el primer código de este nuevo diseño, una tarea sencilla C → (F, K) y pocas neuronas, como laboratorio para testear variantes.
 - Cada componente tiene su eje y su pozo: $\vec{\xi}_F=(F^*,0)$ y $\vec{\xi}_K=(0,K^*)$. No se agrupan ambas magnitudes en un único pozo $(F^*,K^*)$.
 - La normalización se recoge con un máximo compartido entre F y K, calculado en entrenamiento y mantenido al validar.
-- El potencial inmanente es vectorial; los pesos transcendentes producen un tiro directo. Los pozos gaussianos orientan el aprendizaje, sin un campo iterativo durante la predicción.
+- La revisión actual usa potencial inmanente escalar, activación inmanente por concretar y atracción trascendente afín mediante un vector de pesos aprendibles. Los pozos gaussianos orientan el aprendizaje, sin un campo iterativo durante la predicción.
 - La cobertura de los dos pozos, la especialización y la precisión se comprobarán antes de incorporar eyección, crecimiento o eliminación.
-- El número de componentes del potencial, la pérdida completa, la inicialización, la lectura de la respuesta y la integración técnica con Godot siguen por concretar.
-- Se prefiere una inicialización transcendente dispersa según la geometría de entrenamiento; esto sustituye la propuesta histórica de todos los sesgos a cero en el mismo origen. Su procedimiento exacto sigue pendiente.
+- El potencial inmanente de la referencia es escalar. La configuración de la pérdida, la inicialización, la lectura de la respuesta y la integración técnica con Godot siguen por concretar.
+- La propuesta más reciente inicializa posiciones sobre los ejes, repartidas con el mismo criterio entre propiedades, sin especialización permanente. Sustituye a colocarlas todas en el mismo origen o sobre el segmento entre referencias; sus valores exactos siguen pendientes.
 
 Véase [el documento del laboratorio](docs/laboratorio-godot-fk.md) para las ecuaciones, el caso de pozos coincidentes en cero y el alcance previsto.
 
@@ -177,3 +177,20 @@ Fecha de registro: 19 de noviembre de 2026.
 - **Pozo o congregación receptor:** aquel subcongregado que necesita más neuronas y al que se dirige la transferencia. No basta con que tenga menos representantes que otro.
 
 Son términos del mecanismo propuesto de eyección; no significan que ya esté implementado. No confundir el pozo receptor con una neurona receptora de señales en el forward inmanente.
+
+
+## 4. Pozo constante como posible donante y exceso de neuronas
+
+Fecha de registro: 19 de noviembre de 2026.
+
+**Estado: idea desarrollada para el laboratorio; no implementada ni ejecutada.**
+
+Estudiar $C^*\to(F^*,1)$ con dos pozos: $(F^*,0)$ y $(0,1)$. Transferir gradualmente candidatas del pozo constante hacia F, reajustando previamente sus parámetros transcendentes con varios ejemplos de entrenamiento. Comprobar precisión y cobertura del donante, mejora del receptor y recuperación.
+
+Se aceptan como criterios: donante con precisión suficiente y estable y representantes aparentemente sustituibles; posible receptor con precisión insuficiente y estancamiento persistente; confirmación mediante simulacro que mantiene al donante y mejora al receptor.
+
+Separar transferencias con N fijo de añadir neuronas. Investigar si el exceso de neuronas puede perjudicar aprendizaje, estabilidad o coste, como observó el usuario en DRANN_C_F.cpp, sin atribuir todavía una causa concreta. El ensayo debe poder encontrar un tamaño útil intermedio y conservar intentos fallidos.
+
+La constante tiene una representación geométrica sencilla, pero sus representantes pueden contribuir al cálculo inmanente. No eliminarlas ni suponerlas donantes solo por ese motivo.
+
+Véase [Experimento C* → (F*, 1)](docs/experimentos/celsius-fahrenheit-constante.md) para el protocolo, controles, medidas y límites.

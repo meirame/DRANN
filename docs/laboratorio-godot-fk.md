@@ -61,30 +61,32 @@ Para recuperar las unidades originales se multiplica por $S$. Un dato nuevo pued
 
 El rango de esta primera tarea debe dar una escala positiva y no nula. Otros casos de normalización quedan por estudiar. La normalización de la entrada también sigue por fijar.
 
-## Potencial inmanente vectorial y tiro directo
+## Potencial inmanente escalar y atracción trascendente
 
-Se mantiene un potencial vectorial por neurona. Su posición transcendente será:
+Actualización del 19 de noviembre de 2026: se sustituye la propuesta vectorial anterior por un potencial inmanente escalar y una atracción trascendente afín.
 
 $$
 \boxed{
 \vec{q}_i(x)=
 \left(\vec{o}+\vec{b}_i^{(T)}\right)
 +
-\underbrace{W_i^{(T)}\vec{V}_i^{(t)}(x)}_{\vec{d}_i(x)}.
+\underbrace{\vec{w}_i^{(T)}V_i^{(t)}(x)}_{\vec{d}_i(x)}.
 }
 $$
 
 - $\vec{o}$: referencia geométrica fija calculada con entrenamiento.
 - $\vec{b}_i^{(T)}$: sesgo transcendente aprendido, independiente de la entrada actual.
-- $\vec{V}_i^{(t)}$: potencial inmanente vectorial conservado al finalizar los pasos internos del ejemplo.
-- $W_i^{(T)}$: pesos aprendibles que convierten ese estado en desplazamiento.
+- $V_i^{(t)}$: potencial inmanente escalar conservado al finalizar los pasos internos del ejemplo.
+- $\vec{w}_i^{(T)}$: vector de pesos aprendibles, con una componente por eje transcendente.
 - $\|\vec{d}_i\|$: impulso; $\vec{d}_i/\|\vec{d}_i\|$: orientación cuando el impulso no es nulo.
 
 Los pesos transcendentes pueden ser positivos, negativos o cero. No aplicarles la regla de anulación de conexiones inmanentes.
 
-Orientación e impulso describen el mismo desplazamiento, sin dos mecanismos de aprendizaje separados. Se realiza un único tiro; no se simula un campo iterativo durante la predicción. Una animación de ese tiro en Godot no añade pasos al modelo.
+La no linealidad se estudia en el rizoma mediante la activación $\sigma$; no se añade una activación transcendente en esta referencia. Tanh es una candidata inmanente, no una decisión definitiva. Identidad puede servir de referencia para la tarea afín de temperaturas.
 
-La cantidad de componentes del potencial inmanente aún debe concretarse. No viene impuesta por el número de entradas, de neuronas ni de coordenadas transcendentes.
+Cada neurona tiene una recta de movimiento que puede alinearse con un eje aprendiendo pesos y sesgo. Sus posiciones iniciales pueden situarse sobre los ejes sin bloquear los demás parámetros. Se pueden permitir cambios de especialización según la entrada, reconociendo las restricciones del desplazamiento afín escalar.
+
+Orientación e impulso describen el mismo desplazamiento. Se realiza una única atracción directa, sin recorrer un campo iterativo en predicción. Su animación no añade pasos al cálculo.
 
 Una neurona internamente aislada sigue recibiendo la entrada y puede aportar una representación útil. Su potencial queda congelado durante los pasos internos del ejemplo; no se excluye automáticamente de la transcendencia ni lee estados dinámicos del conjunto.
 
@@ -100,11 +102,20 @@ U_k(\vec{q},x)=
 \qquad A_k>0,\quad r_k>0.
 $$
 
-Este potencial escalar transcendente es distinto del potencial vectorial inmanente.
+Este potencial escalar del paisaje transcendente tiene una función distinta del potencial escalar inmanente de cada neurona.
 
 Los pozos orientan el backward para corregir los parámetros que produjeron las posiciones. No colocar artificialmente una predicción sobre la respuesta y contarla como acierto.
 
-La pérdida completa sigue pendiente: debe promover acercamiento a algún pozo y cobertura de ambos, evitando que todas las neuronas representen solo una propiedad. No se ha aprobado una simple suma de atracciones que pueda compensarse entre pozos.
+El esquema base discutido combina atracción y cobertura, con alcance compartido r:
+
+$
+\ell_{ik}=1-\exp\left(-\frac{\|\vec{q}_i-\vec{\xi}_k\|^2}{2r^2}\right),
+\qquad
+L=\frac1N\sum_i\min_k\ell_{ik}
++\frac12\sum_{k\in\{F,K\}}\min_i\ell_{ik}.
+$
+
+Su configuración numérica y el tratamiento de empates aún deben concretarse. Se permite especialización variable según la entrada. No se ha aprobado una simple suma de atracciones de todos los pozos sobre cada neurona.
 
 También deben concretarse profundidad, alcance y tratamiento de gradientes pequeños lejos de los pozos. La eyección y el impulso varado siguen siendo ideas para experimentar después.
 
@@ -130,7 +141,7 @@ Primero comprobaremos estimación y congregación con pocas neuronas; el número
 Quedan por fijar:
 
 1. Dataset, separación de entrenamiento y validación y normalización de la entrada.
-2. Número de neuronas y componentes de cada potencial inmanente.
+2. Número de neuronas; el potencial inmanente de esta referencia es escalar.
 3. Activación inmanente e inicialización de los parámetros y posiciones transcendentes.
 4. Pérdida de atracción y cobertura, y parámetros de los pozos.
 5. Lectura de la respuesta y métricas de especialización, sin asumir una media por grupos que no se ha acordado.
@@ -139,3 +150,12 @@ Quedan por fijar:
 La coincidencia de varias neuronas en un pozo indica posibles candidatas a reducción, pero no demuestra que sean prescindibles: pueden cooperar inmanentemente.
 
 La reconstrucción inversa y la influencia colectiva sobre neuronas aisladas permanecen aparcadas en [el ideario](../ideario.md).
+
+
+## Variante propuesta: C* → (F*, 1)
+
+Se incorpora como idea de experimento [la transferencia desde un pozo constante hacia Fahrenheit y el estudio del exceso de neuronas](experimentos/celsius-fahrenheit-constante.md).
+
+El ensayo compara reasignación con N fijo, continuación sin intervención y distintos tamaños de red. Parte del antecedente observado por el usuario en DRANN_C_F.cpp: más neuronas podían empeorar error, estabilidad o velocidad de aprendizaje. El laboratorio debe registrar también ese posible perjuicio.
+
+Es una propuesta documentada, todavía sin implementación ni resultados.
