@@ -168,3 +168,12 @@ Fecha de registro: 19 de noviembre de 2026.
 - Se prefiere una inicialización transcendente dispersa según la geometría de entrenamiento; esto sustituye la propuesta histórica de todos los sesgos a cero en el mismo origen. Su procedimiento exacto sigue pendiente.
 
 Véase [el documento del laboratorio](docs/laboratorio-godot-fk.md) para las ecuaciones, el caso de pozos coincidentes en cero y el alcance previsto.
+
+## Terminología: donante y receptor
+
+Fecha de registro: 19 de noviembre de 2026.
+
+- **Pozo o congregación donante:** aquel del que se propone transferir una o varias neuronas mediante una eyección por sobrecongregación. La transferencia solo se acepta tras comprobar que el donante conserva suficiente precisión y cobertura.
+- **Pozo o congregación receptor:** aquel subcongregado que necesita más neuronas y al que se dirige la transferencia. No basta con que tenga menos representantes que otro.
+
+Son términos del mecanismo propuesto de eyección; no significan que ya esté implementado. No confundir el pozo receptor con una neurona receptora de señales en el forward inmanente.
