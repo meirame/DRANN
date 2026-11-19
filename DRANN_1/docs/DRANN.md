@@ -1,6 +1,6 @@
 # Especificación de DRANN, primera versión
 
-Estado: el código del experimento Celsius a Fahrenheit está en `DRANN_C_F.cpp`, con pruebas en `tests/DRANN_tests.cpp`. Esta especificación recoge las decisiones de la conversación hasta el 17 de noviembre de 2026 y distingue acuerdos de elecciones de implementación. Los resultados iniciales están en [experiment-v1.md](experiment-v1.md).
+Estado actual: la lectura geométrica de Celsius a (Fahrenheit, Kelvin) está en `DRANN_C_F.cpp`, con pruebas en `tests/DRANN_tests.cpp`. Esta especificación recoge las decisiones de la conversación hasta el 17 de noviembre de 2026 y distingue acuerdos de elecciones de implementación. Los resultados iniciales están en [experiment-v1.md](experiment-v1.md).
 
 ## 1. Propósito y alcance
 
@@ -99,7 +99,10 @@ La señal no se reparte como un caudal entre destinatarias, no se descuenta de l
 
 El forward termina cuando no queda ninguna transmisora local válida. No es necesario que todas las neuronas hayan transmitido. No hay condición de parada aprendida. Cada paso productivo retira al menos una neurona, por lo que el número de pasos productivos está acotado por el número inicial de participantes.
 
-## 5. Cognifenómenos y pérdida
+## 5. Cognifenómenos y pérdida escalar de referencia
+
+Esta sección describe v1. La salida y pérdida vectoriales actuales, junto con su backward, se especifican en [experiment-celsius-fahrenheit-kelvin.md](experiment-celsius-fahrenheit-kelvin.md). El potencial por neurona y la dinámica interna de las secciones anteriores siguen siendo escalares. La nueva señal geométrica sustituye la derivada escalar final de la sección 6, sin sumarla de nuevo.
+
 
 El **cognifenómeno primitivo** del caso escalar es el conjunto de puntos con multiplicidad formado por los últimos potenciales de las neuronas de `A_ej`. Cuenta cada neurona participante por igual, incluidas las retiradas. Si varios potenciales coinciden, sus aportaciones no se deduplican.
 
@@ -236,3 +239,9 @@ La preferencia actual del usuario es trabajar y ejecutar la DRANN en su ordenado
 Este chat remoto no tiene acceso directo a la carpeta local ni puede cambiar de equipo de ejecución mediante las herramientas disponibles. Para completar el traslado hay que abrir esa carpeta como proyecto local en Codex y retomar allí el trabajo con estos documentos.
 
 Estos archivos preservan el contexto del proyecto, no una copia literal ni una sincronización del historial de conversación. Al retomar desde otro chat, leer esta especificación y `AGENTS.md`, revisar el estado real del repositorio y continuar desde lo ya implementado.
+
+## 11. Lectura vectorial vigente
+
+La implementación actual conserva el rizoma escalar y añade posiciones aprendibles `q[i,k]=alpha[i,k]*V_last[i]+beta[i,k]`, con identidad geométrica, alpha inicial 1 y beta inicial 0. El ideal es un único punto ordenado (Fahrenheit, Kelvin), normalizado por 100 en ambas coordenadas. La pérdida promedia participantes y suma coordenadas sin dividir por D. Los gradientes de lectura, el control D=1 congelado, las pruebas y la primera ejecución están documentados en [el experimento vectorial](experiment-celsius-fahrenheit-kelvin.md).
+
+Se conserva la configuración local de 3 neuronas, lr 0.001, semilla 42 y meta por defecto de 100000 épocas. La verificación registrada usa explícitamente 1000 épocas. Se mantienen los 8 ejemplos de entrenamiento y 2 de validación. El nuevo historial se llama `training_history_fk.csv`; los historiales escalares anteriores se conservan. Esta entrega no añade reducción de neuronas, Adam ni Godot.

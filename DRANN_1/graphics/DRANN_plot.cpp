@@ -123,6 +123,11 @@ struct DRANNPlot::Impl {
     ImGui::Text("Entrenamiento: %.9g    Validación: %.9g", latest.training.loss,
                 latest.validation.loss);
 
+    if (latest.training.coordinateLoss.size() == 2 && latest.validation.coordinateLoss.size() == 2)
+      ImGui::Text("F: train %.6g / val %.6g | K: train %.6g / val %.6g",
+                  latest.training.coordinateLoss[0], latest.validation.coordinateLoss[0],
+                  latest.training.coordinateLoss[1], latest.validation.coordinateLoss[1]);
+
     if (ImPlot::BeginPlot("Pérdida de entrenamiento y validación", ImVec2(-1, -70))) {
       ImPlotAxisFlags flags = autoFit ? ImPlotAxisFlags_AutoFit : ImPlotAxisFlags_None;
       ImPlot::SetupAxes("Época e", "Pérdida geométrica normalizada", flags, flags);
@@ -142,7 +147,7 @@ struct DRANNPlot::Impl {
                                  : latest.e >= goal ? "Entrenamiento completado. Puedes explorar la gráfica."
                                  : paused ? "En pausa. El modelo no se actualiza."
                                           : "Entrenando...");
-    ImGui::TextUnformatted("CSV: training_history.csv | Cerrar detiene el entrenamiento tras la época actual.");
+    ImGui::TextUnformatted("CSV: training_history_fk.csv | Cerrar detiene el entrenamiento tras la época actual.");
     ImGui::End();
     ImGui::Render();
     int width, height;

@@ -5,3 +5,8 @@
 /training_history.png
 /.venv/
 __pycache__/
+
+# Archivos locales de la primera variante, trasladada a DRANN_1.
+/DRANN_1/build/
+/DRANN_1/output/
+/DRANN_1/training_history*.csv

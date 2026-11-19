@@ -132,12 +132,17 @@ struct drannStep {
   std::vector<drannTransmission> transmissions;
 };
 
+using drannPoint = std::vector<double>;
+using drannTargets = std::vector<drannPoint>;
+
 struct drannGradients {
   std::vector<double> inputWeights, weights, bias;
+  drannTargets alpha = {}, beta = {};
 };
 
 struct drannMetrics {
   double loss, meanSteps;
+  drannPoint coordinateLoss = {};
 };
 
 struct drannEpoch {
@@ -150,6 +155,9 @@ struct DRANN {
   drannFunctions drannFunction;
 
   std::vector<double> inputWeights, bias;
+  drannTargets alpha, beta; // Lectura geométrica, separada de los potenciales internos.
+  std::size_t outputDimension;
+  bool learnGeometry;
   // Una sola entrada por pareja: no hay copias dirigidas ni autoconexiones.
   std::vector<drannConnection> weights;
 
@@ -159,12 +167,16 @@ struct DRANN {
   double xCache = 0.0;
   double lr;
 
-  DRANN(std::size_t neuronNumber, double learningRate)
+  DRANN(std::size_t neuronNumber, double learningRate,
+        std::size_t dimensions = 1, bool trainGeometry = false)
       : inputWeights(neuronNumber, 0.0), bias(neuronNumber, 0.0),
+        alpha(neuronNumber, drannPoint(dimensions, 1.0)),
+        beta(neuronNumber, drannPoint(dimensions, 0.0)),
+        outputDimension(dimensions), learnGeometry(trainGeometry),
         sigmaCache(neuronNumber, 0.0), participating(neuronNumber, false),
         lr(learningRate) {
-    if (neuronNumber < 2 || !std::isfinite(lr) || lr <= 0.0)
-      throw std::invalid_argument("Se requieren al menos 2 neuronas y lr positivo.");
+    if (neuronNumber < 2 || dimensions == 0 || !std::isfinite(lr) || lr <= 0.0)
+      throw std::invalid_argument("Se requieren al menos 2 neuronas, una coordenada y lr positivo.");
 
     for (std::size_t i = 0; i < neuronNumber; i++) {
       for (std::size_t j = i + 1; j < neuronNumber; j++)
@@ -191,6 +203,8 @@ struct DRANN {
       connection.w = positiveWeight();
       connection.active = true;
     }
+    alpha.assign(inputWeights.size(), drannPoint(outputDimension, 1.0));
+    beta.assign(inputWeights.size(), drannPoint(outputDimension, 0.0));
     stepCache.clear();
     participating.assign(inputWeights.size(), false);
   }
@@ -209,8 +223,47 @@ struct DRANN {
     return count;
   }
 
+  void checkGeometry(const drannTargets &values) const {
+    if (values.size() != inputWeights.size())
+      throw std::invalid_argument("Número de neuronas geométricas incorrecto.");
+    for (const drannPoint &row : values) {
+      if (row.size() != outputDimension)
+        throw std::invalid_argument("Dimensión geométrica incorrecta.");
+      for (double value : row)
+        if (!std::isfinite(value))
+          throw std::invalid_argument("Componente geométrica no finita.");
+    }
+  }
+
+  void checkTarget(const drannPoint &y) const {
+    if (y.size() != outputDimension)
+      throw std::invalid_argument("Dimensión del ideal incorrecta.");
+    for (double value : y)
+      if (!std::isfinite(value))
+        throw std::invalid_argument("El ideal debe ser finito.");
+  }
+
+  void checkDataset(const std::vector<double> &X, const drannTargets &Y) const {
+    if (X.empty() || X.size() != Y.size())
+      throw std::invalid_argument("El dataset debe contener pares entrada-salida.");
+    for (std::size_t ej = 0; ej < X.size(); ej++) {
+      if (!std::isfinite(X[ej]))
+        throw std::invalid_argument("La entrada debe ser finita.");
+      checkTarget(Y[ej]);
+    }
+  }
+
+  static drannTargets scalarTargets(const std::vector<double> &values) {
+    drannTargets result;
+    for (double value : values)
+      result.push_back({value});
+    return result;
+  }
+
   /*=======FORWARD=======*/
   void forwardRhizome(double x) {
+    checkGeometry(alpha);
+    checkGeometry(beta);
     if (!std::isfinite(x))
       throw std::invalid_argument("La entrada debe ser finita.");
 
@@ -300,42 +353,84 @@ struct DRANN {
     }
   }
 
-  /*=======LOSS FUNCTION=======*/
-  double loss(double y) const {
-    std::size_t count = participantCount();
-    if (count == 0 || !std::isfinite(y))
-      throw std::invalid_argument("La pérdida requiere participantes y un ideal finito.");
-    double L = 0.0;
-    for (std::size_t j = 0; j < sigmaCache.size(); j++) {
-      if (participating[j]) {
-        double difference = sigmaCache[j] - y;
-        L += difference * difference;
+  /*=======GEOMETRIC READOUT=======*/
+  drannTargets readGeometry() const {
+    checkGeometry(alpha);
+    checkGeometry(beta);
+    if (participantCount() == 0)
+      throw std::invalid_argument("La lectura requiere un forward con participantes.");
+    drannTargets positions(inputWeights.size(), drannPoint(outputDimension, 0.0));
+    for (std::size_t i = 0; i < inputWeights.size(); i++) {
+      if (!participating[i])
+        continue;
+      for (std::size_t k = 0; k < outputDimension; k++) {
+        positions[i][k] = alpha[i][k] * sigmaCache[i] + beta[i][k];
+        if (!std::isfinite(positions[i][k]))
+          throw std::runtime_error("Posición geométrica no finita.");
       }
     }
-    L /= static_cast<double>(count);
-    if (!std::isfinite(L))
-      throw std::runtime_error("Pérdida no finita.");
-    return L;
+    return positions;
   }
+
+  /*=======LOSS FUNCTION=======*/
+  drannPoint coordinateLoss(const drannPoint &y) const {
+    checkTarget(y);
+    const drannTargets positions = readGeometry();
+    drannPoint losses(outputDimension, 0.0);
+    for (std::size_t i = 0; i < inputWeights.size(); i++) {
+      if (!participating[i])
+        continue;
+      for (std::size_t k = 0; k < outputDimension; k++) {
+        double difference = positions[i][k] - y[k];
+        losses[k] += difference * difference;
+      }
+    }
+    for (double &value : losses) {
+      value /= static_cast<double>(participantCount());
+      if (!std::isfinite(value))
+        throw std::runtime_error("Pérdida no finita.");
+    }
+    return losses;
+  }
+
+  double loss(const drannPoint &y) const {
+    double total = 0.0;
+    for (double value : coordinateLoss(y))
+      total += value;
+    if (!std::isfinite(total))
+      throw std::runtime_error("Pérdida total no finita.");
+    return total;
+  }
+
+  // Adaptadores escalares: mismo núcleo, D=1 y geometría fija para comparar v1.
+  double loss(double y) const { return loss(drannPoint{y}); }
 
   double lossDerivative(double potential, double y) const {
     return 2.0 * (potential - y);
   }
 
   /*=======BACKPROP=======*/
-  drannGradients backpropRhizome(double y) const {
-    if (participantCount() == 0 || !std::isfinite(y))
-      throw std::invalid_argument("El backward requiere un forward y un ideal finito.");
+  drannGradients backpropRhizome(const drannPoint &y) const {
+    checkTarget(y);
+    const drannTargets positions = readGeometry();
     drannGradients gradients;
     gradients.inputWeights.assign(inputWeights.size(), 0.0);
     gradients.weights.assign(weights.size(), 0.0);
     gradients.bias.assign(bias.size(), 0.0);
 
+    gradients.alpha.assign(inputWeights.size(), drannPoint(outputDimension, 0.0));
+    gradients.beta.assign(inputWeights.size(), drannPoint(outputDimension, 0.0));
     std::vector<double> delta(inputWeights.size(), 0.0);
-    for (std::size_t j = 0; j < inputWeights.size(); j++) {
-      if (participating[j])
-        delta[j] = lossDerivative(sigmaCache[j], y) /
-                   static_cast<double>(participantCount());
+    for (std::size_t i = 0; i < inputWeights.size(); i++) {
+      if (!participating[i])
+        continue;
+      for (std::size_t k = 0; k < outputDimension; k++) {
+        double geometricDelta = 2.0 * (positions[i][k] - y[k]) /
+                                static_cast<double>(participantCount());
+        gradients.alpha[i][k] = geometricDelta * sigmaCache[i];
+        gradients.beta[i][k] = geometricDelta;
+        delta[i] += geometricDelta * alpha[i][k];
+      }
     }
 
     for (std::size_t tau = stepCache.size(); tau > 0; tau--) {
@@ -364,8 +459,18 @@ struct DRANN {
     return gradients;
   }
 
+  drannGradients backpropRhizome(double y) const {
+    return backpropRhizome(drannPoint{y});
+  }
+
   /*=======PARAMETER UPDATE=======*/
   void parameterUpdate(const drannGradients &gradients) {
+    checkGeometry(alpha);
+    checkGeometry(beta);
+    if (learnGeometry) {
+      checkGeometry(gradients.alpha);
+      checkGeometry(gradients.beta);
+    }
     if (gradients.inputWeights.size() != inputWeights.size() ||
         gradients.bias.size() != bias.size() ||
         gradients.weights.size() != weights.size())
@@ -386,31 +491,52 @@ struct DRANN {
       if (weights[k].w <= 0.0)
         weights[k].active = false;
     }
+    if (learnGeometry) {
+      for (std::size_t i = 0; i < inputWeights.size(); i++) {
+        for (std::size_t k = 0; k < outputDimension; k++) {
+          alpha[i][k] -= lr * gradients.alpha[i][k];
+          beta[i][k] -= lr * gradients.beta[i][k];
+          if (!std::isfinite(alpha[i][k]) || !std::isfinite(beta[i][k]))
+            throw std::runtime_error("Parámetro geométrico no finito.");
+        }
+      }
+    }
   }
 
   /*=======EVALUATION=======*/
-  drannMetrics evaluate(const std::vector<double> &X,
-                       const std::vector<double> &Y) {
-    if (X.empty() || X.size() != Y.size())
-      throw std::invalid_argument("El dataset debe contener pares entrada-salida.");
-    drannMetrics metrics{0.0, 0.0};
+  drannMetrics evaluateVector(const std::vector<double> &X, const drannTargets &Y) {
+    checkDataset(X, Y);
+    drannMetrics metrics{0.0, 0.0, drannPoint(outputDimension, 0.0)};
     for (std::size_t ej = 0; ej < X.size(); ej++) {
       forwardRhizome(X[ej]);
-      metrics.loss += loss(Y[ej]);
+      const drannPoint losses = coordinateLoss(Y[ej]);
+      for (std::size_t k = 0; k < outputDimension; k++)
+        metrics.coordinateLoss[k] += losses[k];
       metrics.meanSteps += static_cast<double>(stepCache.size());
     }
-    metrics.loss /= static_cast<double>(X.size());
+    for (double &value : metrics.coordinateLoss) {
+      value /= static_cast<double>(X.size());
+      metrics.loss += value;
+    }
     metrics.meanSteps /= static_cast<double>(X.size());
+    if (!std::isfinite(metrics.loss))
+      throw std::runtime_error("Pérdida media no finita.");
     return metrics;
   }
 
+  drannMetrics evaluate(const std::vector<double> &X, const std::vector<double> &Y) {
+    return evaluateVector(X, scalarTargets(Y));
+  }
+
   /*=======TRAINING=======*/
-  int train(const std::vector<double> &X, const std::vector<double> &Y,
+  int trainVector(const std::vector<double> &X, const drannTargets &Y,
              const std::vector<double> &Xvalidation,
-             const std::vector<double> &Yvalidation, int epochs,
+             const drannTargets &Yvalidation, int epochs,
              const std::string &historyPath,
              const std::function<bool(const drannEpoch &)> &onEpoch = {},
              std::optional<int> resumeAfter = std::nullopt) {
+    checkDataset(X, Y);
+    checkDataset(Xvalidation, Yvalidation);
     if (epochs < 1 || epochs == std::numeric_limits<int>::max())
       throw std::invalid_argument("El número de épocas debe ser positivo y representable.");
     if (resumeAfter && (*resumeAfter < 0 || *resumeAfter >= epochs))
@@ -421,7 +547,15 @@ struct DRANN {
     history << std::setprecision(17);
     if (!resumeAfter) {
       history << "epoch,training_loss,validation_loss,training_mean_steps,"
-                 "validation_mean_steps,active_connections,participating_neurons\n";
+                 "validation_mean_steps,active_connections,participating_neurons";
+      if (outputDimension > 1) {
+        for (const char *group : {"training_loss_", "validation_loss_"}) {
+          for (std::size_t k = 0; k < outputDimension; k++)
+            history << ',' << group << (outputDimension == 2 ? (k == 0 ? "fahrenheit" : "kelvin")
+                                         : "coordinate_" + std::to_string(k));
+        }
+      }
+      history << '\n';
     }
 
     drannConsole console;
@@ -482,12 +616,19 @@ struct DRANN {
     printProgress(firstEpoch, true);
 
     auto record = [&](int e) {
-      drannMetrics training = evaluate(X, Y);
-      drannMetrics validation = evaluate(Xvalidation, Yvalidation);
+      drannMetrics training = evaluateVector(X, Y);
+      drannMetrics validation = evaluateVector(Xvalidation, Yvalidation);
       const auto evaluated = Clock::now();
       history << e << ',' << training.loss << ',' << validation.loss << ','
               << training.meanSteps << ',' << validation.meanSteps << ','
-              << activeConnections() << ',' << participantCount() << '\n';
+              << activeConnections() << ',' << participantCount();
+      if (outputDimension > 1) {
+        for (double value : training.coordinateLoss)
+          history << ',' << value;
+        for (double value : validation.coordinateLoss)
+          history << ',' << value;
+      }
+      history << '\n';
       history.flush();
       if (!history)
         throw std::runtime_error("No se pudo escribir el historial.");
@@ -500,8 +641,13 @@ struct DRANN {
         message << std::setprecision(10) << "Training Loss: " << training.loss
                 << " | Validation Loss: " << validation.loss
                 << "\nActive connections: " << activeConnections()
+                << " | "
                 << " | Participating neurons: " << participantCount()
                 << " | Steps: " << validation.meanSteps;
+        if (outputDimension == 2)
+          message << "\nCoordinate Loss (F, K): Training = (" << training.coordinateLoss[0]
+                  << ", " << training.coordinateLoss[1] << ") | Validation = ("
+                  << validation.coordinateLoss[0] << ", " << validation.coordinateLoss[1] << ')';
         // Una línea por llamada: mantener la barra fijada debajo del resumen.
         std::istringstream lines(message.str());
         for (std::string line; std::getline(lines, line);)
@@ -534,28 +680,48 @@ struct DRANN {
     return epochs;
   }
 
+  int train(const std::vector<double> &X, const std::vector<double> &Y,
+            const std::vector<double> &Xvalidation, const std::vector<double> &Yvalidation,
+            int epochs, const std::string &historyPath,
+            const std::function<bool(const drannEpoch &)> &onEpoch = {},
+            std::optional<int> resumeAfter = std::nullopt) {
+    return trainVector(X, scalarTargets(Y), Xvalidation, scalarTargets(Yvalidation),
+                       epochs, historyPath, onEpoch, resumeAfter);
+  }
+
   /*=======VALIDATION=======*/
-  void validation(double x, double y) {
+  void validation(double x, const drannPoint &y) {
+    checkTarget(y);
     forwardRhizome(x);
+    const drannTargets positions = readGeometry();
+    const drannPoint losses = coordinateLoss(y);
     drannConsole console;
     std::ostringstream message;
-    message << std::setprecision(10)
-            << "Input (C): " << x * 100.0 << " | Ideal (F): " << y * 100.0
-            << "\nCognifenomeno primitivo (F): [";
+    message << std::setprecision(10) << "Input (C): " << x * 100.0
+            << (outputDimension == 2 ? " | Ideal (F, K): (" : " | Ideal: (");
+    for (std::size_t k = 0; k < outputDimension; k++)
+      message << (k ? ", " : "") << y[k] * 100.0;
+    message << ")\nCognifenomeno primitivo (physical): [";
     bool first = true;
-    for (std::size_t j = 0; j < sigmaCache.size(); j++) {
-      if (participating[j]) {
-        if (!first)
-          message << ", ";
-        message << sigmaCache[j] * 100.0;
-        first = false;
-      }
+    for (std::size_t i = 0; i < positions.size(); i++) {
+      if (!participating[i])
+        continue;
+      message << (first ? "(" : ", (");
+      first = false;
+      for (std::size_t k = 0; k < outputDimension; k++)
+        message << (k ? ", " : "") << positions[i][k] * 100.0;
+      message << ')';
     }
-    message << "]\nGeometric loss (normalized): " << loss(y)
-            << " | Steps: " << stepCache.size();
+    message << "]\nCoordinate Loss: (";
+    for (std::size_t k = 0; k < outputDimension; k++)
+      message << (k ? ", " : "") << losses[k];
+    message << ") | Total Loss: " << loss(y) << " | Steps: " << stepCache.size();
     console.line(15, message.str());
     console.line(8, "------------------------------------------------");
   }
+
+  void validation(double x, double y) { validation(x, drannPoint{y}); }
+
 };
 
 #ifndef DRANN_NO_MAIN
@@ -604,18 +770,19 @@ int main(int argc, char **argv) {
     // Elección inicial documentada: 8 ejemplos de entrenamiento y 2 de validación.
     std::vector<double> celsius = {-40, -20, 0, 20, 40, 60, 80, 100};
     std::vector<double> validationCelsius = {10, 70};
-    std::vector<double> X, Y, Xvalidation, Yvalidation;
+    std::vector<double> X, Xvalidation;
+    drannTargets Y, Yvalidation;
     for (double c : celsius) {
       X.push_back(c / 100.0);
-      Y.push_back((1.8 * c + 32.0) / 100.0);
+      Y.push_back({(1.8 * c + 32.0) / 100.0, (c + 273.15) / 100.0});
     }
     for (double c : validationCelsius) {
       Xvalidation.push_back(c / 100.0);
-      Yvalidation.push_back((1.8 * c + 32.0) / 100.0);
+      Yvalidation.push_back({(1.8 * c + 32.0) / 100.0, (c + 273.15) / 100.0});
     }
 
     /*=======CONFIGURATION=======*/
-    std::size_t neuronNumber = 3;
+    std::size_t neuronNumber = 2;
     double lr = 0.001;
     int epochs = 100000;
     unsigned int seed = 42;
@@ -629,11 +796,11 @@ int main(int argc, char **argv) {
           epochs == std::numeric_limits<int>::max())
         throw std::invalid_argument("El número de épocas debe ser positivo y representable.");
     }
-    DRANN drann(neuronNumber, lr);
+    DRANN drann(neuronNumber, lr, 2, true);
     drann.initWeights(seed);
 
     drannConsole console;
-    console.line(15, "DRANN | Celsius -> Fahrenheit");
+    console.line(15, "DRANN | Celsius -> (Fahrenheit, Kelvin)");
     console.line(8, "------------------------------------------------");
     std::ostringstream configuration;
     configuration << std::setprecision(10) << "Neurons: " << neuronNumber << " | Seed: " << seed
@@ -647,15 +814,15 @@ int main(int argc, char **argv) {
 #endif
     std::optional<int> resumeAfter;
     while (epochs > 0) {
-      const int completed = drann.train(X, Y, Xvalidation, Yvalidation, epochs,
-                                        "training_history.csv", onEpoch, resumeAfter);
+      const int completed = drann.trainVector(X, Y, Xvalidation, Yvalidation, epochs,
+                                        "training_history_fk.csv", onEpoch, resumeAfter);
       console.line(15, "Validation results:");
       const auto validationStarted = drannConsole::Clock::now();
       for (std::size_t ej = 0; ej < Xvalidation.size(); ej++)
         drann.validation(Xvalidation[ej], Yvalidation[ej]);
       console.line(8, "Final validation duration: " +
                       drannConsole::duration(drannConsole::Clock::now() - validationStarted));
-      console.line(10, "History saved in training_history.csv.");
+      console.line(10, "History saved in training_history_fk.csv.");
 #ifdef DRANN_GUI
       epochs = plot.waitForContinuation();
 #else

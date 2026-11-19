@@ -2,9 +2,9 @@
 
 Diseño de una red neuronal artificial rizomática diferencial, implementada desde cero en C++.
 
-El primer experimento será una regresión de Celsius a Fahrenheit. Primero se desarrollará un ejecutable de consola; la integración con Godot se abordará después.
+El experimento actual aprende Celsius → (Fahrenheit, Kelvin) mediante una lectura geométrica vectorial sobre un rizoma de potenciales escalares. Primero se desarrollará un ejecutable de consola; la integración con Godot se abordará después.
 
-El experimento Celsius a Fahrenheit está en `DRANN_C_F.cpp` y sigue la estructura y el estilo de `XOR.cpp`: `struct`, vectores, cachés, bucles y derivadas manuales. No utiliza frameworks neuronales ni autodiferenciación.
+El experimento Celsius a (Fahrenheit, Kelvin) está en `DRANN_C_F.cpp` y sigue la estructura y el estilo de `XOR.cpp`: `struct`, vectores, cachés, bucles y derivadas manuales. No utiliza frameworks neuronales ni autodiferenciación.
 
 ## Compilar y ejecutar
 
@@ -16,9 +16,9 @@ g++ -std=c++17 -O2 -Wall -Wextra -Wpedantic DRANN_C_F.cpp -o build/drann
 ./build/drann
 ```
 
-La configuración actual ejecuta 100 000 épocas con 2 neuronas y `lr = 0.001`. Genera `training_history.csv` en el directorio de ejecución: una evaluación inicial y otra tras cada época, con las pérdidas geométricas de entrenamiento y validación, pasos medios, conexiones activas y neuronas participantes. Una nueva ejecución reemplaza ese archivo.
+La configuración actual ejecuta 100 000 épocas con 3 neuronas y `lr = 0.001`. Genera `training_history_fk.csv` en el directorio de ejecución: una evaluación inicial y otra tras cada época, con las pérdidas geométricas de entrenamiento y validación, pasos medios, conexiones activas, neuronas participantes y pérdidas por coordenada Fahrenheit/Kelvin. Una nueva ejecución reemplaza ese archivo.
 
-Al terminar muestra el cognifenómeno primitivo completo de los dos ejemplos de validación, desnormalizado a Fahrenheit. No sustituye la nube por una neurona de salida ni por un promedio para calcular la pérdida.
+Al terminar muestra los puntos bidimensionales completos de los dos ejemplos de validación, desnormalizados a (Fahrenheit, Kelvin). No sustituye la nube por una neurona de salida ni por un promedio para calcular la pérdida.
 
 En una terminal interactiva, al terminar puedes introducir cuántas épocas más quieres entrenar. El programa continúa desde la siguiente época y agrega los resultados al mismo CSV. Pulsa Intro o escribe `0` para salir.
 
@@ -108,7 +108,7 @@ La configuración y el dataset están en `main()` para mantenerlos visibles y f�
 
 - Entrenamiento en Celsius: `{-40, -20, 0, 20, 40, 60, 80, 100}`.
 - Validación en Celsius: `{10, 70}`.
-- Normalización: `x = C / 100`, `y = F / 100`, con `F = 1.8*C + 32` para generar las etiquetas.
+- Normalización: `x = C / 100`, `y = (F/100, K/100)`, con `F = 1.8*C + 32`, `K = C + 273.15` para generar las etiquetas. La lectura aprendible es `q = alpha*V_last + beta`, con alpha inicial 1 y beta inicial 0; el ideal conserva el orden (F,K).
 - Semilla inicial: `42`; ejemplos en orden fijo, sin barajado.
 - Pesos internos compartidos entre ambas direcciones; su anulación es irreversible durante el entrenamiento. Los pesos de entrada son parámetros ordinarios y no reciben esa anulación.
 
@@ -130,7 +130,9 @@ g++ -std=c++17 -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer tests
 ./build/drann_tests_sanitized
 ```
 
-## Resultado inicial y límites
+La especificación de la lectura, los gradientes y el resultado local están en [el experimento Fahrenheit/Kelvin](docs/experiment-celsius-fahrenheit-kelvin.md). La pérdida promedia neuronas y suma coordenadas; no divide por 2. El archivo escalar anterior `training_history.csv` se conserva.
+
+## Resultado inicial escalar y límites
 
 Con GCC 14.2.0 y la semilla 42, el error geométrico normalizado de validación pasó de `0.6280624832` a `0.0118076840`; el de entrenamiento pasó de `0.6230380312` a `0.0318698253`. Quedaron 9 de las 10 conexiones internas y las 5 neuronas participantes. La pérdida es sobre todos los puntos de la nube, no el error de un único escalar predicho.
 
@@ -138,6 +140,7 @@ La conversión todavía no es exacta. Dos ejemplos de validación y una tarea li
 
 ## Contexto del proyecto
 
+- [Experimento vectorial Fahrenheit/Kelvin y resultados](docs/experiment-celsius-fahrenheit-kelvin.md).
 - [Especificación y decisiones de diseño](docs/DRANN.md).
 - [Instrucciones de trabajo y estilo](AGENTS.md).
 - [Referencia de estilo original: XOR.cpp](docs/reference/XOR.cpp). Este archivo es una referencia del usuario, no la implementación de la DRANN.

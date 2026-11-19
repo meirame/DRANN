@@ -1,0 +1,19 @@
+Start testing: Nov 19 16:01 CET
+----------------------------------------------------------
+1/1 Testing: drann_numerical
+1/1 Test: drann_numerical
+Command: "/home/luis/personal/DRANN/DRANN_2/build/drann_tests"
+Directory: /home/luis/personal/DRANN/DRANN_2/build
+"drann_numerical" start time: Nov 19 16:01 CET
+Output:
+----------------------------------------------------------
+Pruebas correctas: 42 derivadas, lectura T=1/2/3, aislamiento, evaluación y reanudación exacta.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"drann_numerical" end time: Nov 19 16:01 CET
+"drann_numerical" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Nov 19 16:01 CET

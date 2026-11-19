@@ -347,6 +347,210 @@ void testTrainingNotifications() {
   std::remove(shortPath.c_str());
 }
 
+void sameParameters(const DRANN &a, const DRANN &b) {
+  require(a.inputWeights == b.inputWeights && a.bias == b.bias &&
+              a.alpha == b.alpha && a.beta == b.beta && a.lr == b.lr,
+          "Los parámetros no coinciden.");
+  for (std::size_t k = 0; k < a.weights.size(); k++)
+    require(a.weights[k].w == b.weights[k].w && a.weights[k].active == b.weights[k].active,
+            "Las conexiones o máscaras no coinciden.");
+}
+
+void testVectorReadout() {
+  DRANN network(3, 0.01, 2, true);
+  network.inputWeights = {2.0, 4.0, 100.0};
+  connect(network, 0, 1, 0.5);
+  network.alpha = {{2.0, -1.0}, {0.5, 3.0}, {9.0, 9.0}};
+  network.beta = {{1.0, 2.0}, {-1.0, 0.5}, {100.0, 100.0}};
+  network.forwardRhizome(1.0);
+  const drannPoint target{2.0, 8.0};
+  const auto points = network.readGeometry();
+  near(network.sigmaCache[0], 3.0, "El potencial interno sigue siendo escalar");
+  near(points[0][0], 7.0, "Primera coordenada de la receptora");
+  near(points[0][1], -1.0, "Segunda coordenada de la receptora");
+  near(points[1][0], 1.0, "Incluir la transmisora retirada");
+  near(points[1][1], 12.5, "Segunda coordenada de la transmisora");
+  const auto losses = network.coordinateLoss(target);
+  near(losses[0], 13.0, "Promedio de neuronas en F");
+  near(losses[1], 50.625, "Promedio de neuronas en K");
+  near(network.loss(target), 63.625, "Sumar coordenadas sin dividir por D");
+  auto gradients = network.backpropRhizome(target);
+  near(gradients.alpha[0][0], 15.0, "dAlpha calculado a mano");
+  near(gradients.alpha[0][1], -27.0, "dAlpha negativo");
+  near(gradients.beta[0][0], 5.0, "dBeta primera coordenada");
+  near(gradients.beta[0][1], -9.0, "dBeta segunda coordenada");
+  near(gradients.alpha[1][0], -4.0, "dAlpha de la retirada");
+  near(gradients.alpha[1][1], 18.0, "dAlpha segunda coordenada retirada");
+  near(gradients.inputWeights[0], 9.5, "Cadena desde la lectura al input");
+  near(gradients.inputWeights[1], 22.5, "Contribución indirecta a la transmisora");
+  near(gradients.weights[0], 38.0, "Gradiente del peso simétrico");
+  near(gradients.bias[0], 28.5, "Sesgo en entrada y recepción");
+  near(gradients.bias[1], 22.5, "Sesgo de la transmisora");
+  for (std::size_t k = 0; k < 2; k++) {
+    near(gradients.alpha[2][k], 0.0, "La aislada no aprende alpha");
+    near(gradients.beta[2][k], 0.0, "La aislada no aprende beta");
+  }
+  DRANN before = network;
+  auto metrics = network.evaluateVector({1.0, -0.4}, {target, {-0.4, 2.3}});
+  sameParameters(before, network);
+  near(metrics.loss, metrics.coordinateLoss[0] + metrics.coordinateLoss[1], "Suma de métricas");
+  network = before;
+  network.parameterUpdate(gradients);
+  near(network.alpha[0][0], 1.85, "Actualización alpha tras acumular gradientes");
+  near(network.beta[0][1], 2.09, "Actualización beta sin recortar signos");
+  near(network.inputWeights[0], 1.905, "Actualizar pesos con el mismo estado previo");
+  require(network.alpha[0][1] < 0.0, "Alpha no tiene restricción de positividad.");
+
+  DRANN ordered(2, 0.005, 2, true);
+  ordered.initWeights(42);
+  ordered.alpha = {{0.0, 0.0}, {0.0, 0.0}};
+  ordered.beta = {{8.0, 2.0}, {8.0, 2.0}};
+  ordered.forwardRhizome(0.3);
+  near(ordered.loss(target), 72.0, "No permutar las coordenadas del ideal");
+  ordered.beta = {{2.0, 8.0}, {2.0, 8.0}};
+  near(ordered.loss(target), 0.0, "Punto ordenado correcto");
+
+  DRANN scalar(5, 0.005), vector(5, 0.005, 2, true);
+  scalar.initWeights(42);
+  vector.initWeights(42);
+  require(scalar.inputWeights == vector.inputWeights, "La geometría no consume el RNG.");
+  for (std::size_t k = 0; k < scalar.weights.size(); k++)
+    near(scalar.weights[k].w, vector.weights[k].w, "Inicialización interna idéntica");
+  scalar.forwardRhizome(0.7);
+  auto scalarBefore = scalar;
+  auto scalarGrad = scalar.backpropRhizome(1.8);
+  scalar.parameterUpdate(scalarGrad);
+  require(scalar.alpha == scalarBefore.alpha && scalar.beta == scalarBefore.beta,
+          "El modo D=1 de compatibilidad mantiene la geometría fija.");
+}
+
+std::size_t checkVectorGradients(DRANN network, double x, const drannPoint &y) {
+  network.forwardRhizome(x);
+  const auto gradients = network.backpropRhizome(y);
+  std::size_t checked = 0;
+  for (int group = 0; group < 5; group++) {
+    const std::size_t size = group < 2 ? network.inputWeights.size()
+                           : group == 2 ? network.weights.size()
+                           : network.inputWeights.size() * network.outputDimension;
+    for (std::size_t index = 0; index < size; index++) {
+      const auto at = [group, index](DRANN &n) -> double & {
+        if (group < 3)
+          return parameter(n, group == 0 ? 0 : group == 1 ? 1 : 2, index);
+        auto &matrix = group == 3 ? n.alpha : n.beta;
+        return matrix[index / n.outputDimension][index % n.outputDimension];
+      };
+      const double expected = group == 0 ? gradients.inputWeights[index]
+                            : group == 1 ? gradients.bias[index]
+                            : group == 2 ? gradients.weights[index]
+                            : group == 3 ? gradients.alpha[index / network.outputDimension][index % network.outputDimension]
+                                         : gradients.beta[index / network.outputDimension][index % network.outputDimension];
+      DRANN plus = network, minus = network;
+      const double h = 1e-6 * std::max(1.0, std::abs(at(plus)));
+      at(plus) += h;
+      at(minus) -= h;
+      plus.forwardRhizome(x);
+      minus.forwardRhizome(x);
+      require(sameRoute(network, plus) && sameRoute(network, minus),
+              "La perturbación vectorial cambió el recorrido o la participación.");
+      for (std::size_t k = 0; k < network.weights.size(); k++)
+        require(network.weights[k].active == plus.weights[k].active &&
+                    network.weights[k].active == minus.weights[k].active,
+                "La perturbación cambió una máscara.");
+      near(expected, (plus.loss(y) - minus.loss(y)) / (2.0 * h),
+           "Gradiente vectorial grupo " + std::to_string(group) + " índice " + std::to_string(index), 3e-7);
+      checked++;
+    }
+  }
+  return checked;
+}
+
+void testVectorBackwardAndDimensions() {
+  DRANN network(5, 0.005, 2, true);
+  network.inputWeights = {3.0 / 0.7, 2.7 / 0.7, 0.95 / 0.7, 0.22 / 0.7, 100.0};
+  network.bias = {0.0, 0.0, 0.05, -0.02, 10.0};
+  connect(network, 0, 2, 0.2);
+  connect(network, 0, 3, 0.15);
+  connect(network, 1, 2, 0.35);
+  connect(network, 1, 3, 0.25);
+  connect(network, 2, 3, 0.1);
+  for (std::size_t i = 0; i < 5; i++) {
+    network.alpha[i] = {0.6 + i * 0.1, -0.7 + i * 0.05};
+    network.beta[i] = {-0.1 + i * 0.02, 0.2 - i * 0.03};
+  }
+  std::size_t checked = checkVectorGradients(network, 0.7, {1.8, 2.9});
+  checked += checkVectorGradients(network, -0.3, {-0.22, 2.4});
+  DRANN chain(3, 0.005, 2, true);
+  chain.inputWeights = {3.0, 2.0, 0.5};
+  chain.bias = {0.1, -0.2, 0.3};
+  connect(chain, 0, 1, 0.25);
+  connect(chain, 1, 2, 0.4);
+  checked += checkVectorGradients(chain, 0.8, {1.2, 3.5});
+  std::cout << "Vector backward: " << checked << " derivadas comprobadas.\n";
+
+  const auto rejected = [](const std::function<void()> &operation) {
+    bool failed = false;
+    try { operation(); } catch (const std::exception &) { failed = true; }
+    require(failed, "Se debía rechazar una dimensión o valor no válido.");
+  };
+  network.forwardRhizome(0.7);
+  rejected([&]() { network.loss(drannPoint{1.0}); });
+  rejected([&]() { network.backpropRhizome(drannPoint{1.0, std::numeric_limits<double>::infinity()}); });
+  rejected([&]() { network.evaluateVector({0.1}, {{0.2}}); });
+  rejected([&]() { network.evaluateVector({0.1, 0.2}, {{0.2, 0.3}}); });
+  rejected([&]() { DRANN invalid(3, 0.005, 0, true); });
+  DRANN malformed = network;
+  malformed.alpha[0].pop_back();
+  rejected([&]() { malformed.forwardRhizome(0.7); });
+  auto gradients = network.backpropRhizome(drannPoint{1.0, 2.0});
+  gradients.beta[0].pop_back();
+  DRANN unchanged = network;
+  rejected([&]() { network.parameterUpdate(gradients); });
+  sameParameters(network, unchanged);
+  DRANN empty(2, 0.005, 2, true);
+  rejected([&]() { empty.forwardRhizome(0.1); });
+}
+
+void testVectorTraining() {
+  struct SilentOutput {
+    std::ostringstream log;
+    std::streambuf *original;
+    SilentOutput() : original(std::cout.rdbuf(log.rdbuf())) {}
+    ~SilentOutput() { std::cout.rdbuf(original); }
+  } silent;
+  const std::vector<double> X{-0.4, 0.0, 0.4, 0.8}, XV{0.1, 0.7};
+  const drannTargets Y{{-0.4, 2.3315}, {0.32, 2.7315}, {1.04, 3.1315}, {1.76, 3.5315}};
+  const drannTargets YV{{0.5, 2.8315}, {1.58, 3.4315}};
+  DRANN plain(5, 0.005, 2, true), notified = plain, cancelled = plain, resumed = plain;
+  plain.initWeights(42); notified.initWeights(42); cancelled.initWeights(42); resumed.initWeights(42);
+  const std::string p = "drann_vector_plain.csv", n = "drann_vector_notified.csv";
+  const std::string c = "drann_vector_cancelled.csv", r = "drann_vector_resumed.csv";
+  plain.trainVector(X, Y, XV, YV, 8, p);
+  std::vector<drannEpoch> records;
+  notified.trainVector(X, Y, XV, YV, 8, n, [&](const drannEpoch &epoch) {
+    near(epoch.validation.loss, epoch.validation.coordinateLoss[0] + epoch.validation.coordinateLoss[1],
+         "El callback conserva las coordenadas y su total");
+    records.push_back(epoch); return true;
+  });
+  require(records.size() == 9, "Notificar referencia y ocho épocas vectoriales.");
+  int completed = cancelled.trainVector(X, Y, XV, YV, 8, c,
+                                        [](const drannEpoch &epoch) { return epoch.e < 3; });
+  resumed.trainVector(X, Y, XV, YV, 3, r);
+  require(completed == 3, "Respetar la cancelación vectorial.");
+  sameParameters(cancelled, resumed);
+  const auto read = [](const std::string &path) {
+    std::ifstream stream(path);
+    return std::string(std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>());
+  };
+  require(read(c) == read(r), "La cancelación conserva exactamente las evaluaciones completadas.");
+  resumed.trainVector(X, Y, XV, YV, 8, r, {}, 3);
+  sameParameters(plain, notified);
+  sameParameters(plain, resumed);
+  require(read(p) == read(n) && read(p) == read(r),
+          "Callback y continuación deben generar el mismo CSV vectorial.");
+  for (const auto &path : {p, n, c, r})
+    std::remove(path.c_str());
+}
+
 int main() {
   try {
     testSequentialPropagation();
@@ -355,6 +559,9 @@ int main() {
     testIrreversiblePruning();
     testBackwardAndEvaluation();
     testTrainingNotifications();
+    testVectorReadout();
+    testVectorBackwardAndDimensions();
+    testVectorTraining();
     std::cout << "Todas las comprobaciones de DRANN han pasado.\n";
     return 0;
   } catch (const std::exception &error) {

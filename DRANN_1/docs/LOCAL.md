@@ -24,7 +24,7 @@ git switch feature/drann-v1
 git pull --ff-only
 ```
 
-Si se editó `DRANN.cpp` para ajustar las épocas, conservar ese cambio antes de actualizar. El README explica el uso de `git stash` y su recuperación. Ahora puede elegirse `--epochs 1000` sin editar el código.
+Si se editó `DRANN_C_F.cpp` para ajustar las épocas, conservar ese cambio antes de actualizar. El README explica el uso de `git stash` y su recuperación. Ahora puede elegirse `--epochs 1000` sin editar el código.
 
 ## Mensaje para el chat local
 
@@ -51,7 +51,7 @@ ctest --test-dir build/headless --output-on-failure
 ./build/headless/drann --epochs 1000
 ```
 
-El historial se escribe en `training_history.csv`. Cada nueva ejecución lo reemplaza, por lo que hay que copiar los resultados que se quieran conservar antes de repetir el experimento.
+El historial se escribe en `training_history_fk.csv`. Cada nueva ejecución lo reemplaza, por lo que hay que copiar los resultados que se quieran conservar antes de repetir el experimento.
 
 ## Publicar un experimento local
 
@@ -64,7 +64,7 @@ Por ejemplo, para una carpeta nueva llamada `ejecucion_local_01`:
 
 ```bash
 mkdir results/ejecucion_local_01
-cp training_history.csv results/ejecucion_local_01/history.csv
+cp training_history_fk.csv results/ejecucion_local_01/history.csv
 ```
 
 Después de escribir sus metadatos:
@@ -80,3 +80,5 @@ Si el trabajo se hace en otra rama, publicar esa rama. Inspeccionar y añadir ex
 ## Referencia ya publicada
 
 [celsius_fahrenheit_seed42_1000](../results/celsius_fahrenheit_seed42_1000/README.md) conserva las 1001 evaluaciones de la ejecución verificada antes del traslado. Su CSV gráfico coincide byte a byte con el de consola. Está identificado como referencia del entorno remoto, no como una captura del disco local del usuario.
+
+La lectura vectorial vigente aprende (Fahrenheit, Kelvin). Ver [su especificación y resultados](experiment-celsius-fahrenheit-kelvin.md). Anotar en cada nuevo resultado alpha/beta iniciales, la dimensión y la convención de suma de coordenadas, además de la configuración habitual.

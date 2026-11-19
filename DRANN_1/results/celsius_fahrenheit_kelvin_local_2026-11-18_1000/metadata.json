@@ -1,0 +1,75 @@
+{
+  "date": "2026-11-18",
+  "provenance": "Ejecución local real en /home/luis/personal/DRANN",
+  "base_commit": "db66a822e5d87fcecc458d510aeb568676a06014",
+  "working_tree_changes": true,
+  "source_sha256": {
+    "DRANN_C_F.cpp": "38dc7dd2cc06d1809e05847fc0de36240b27baa25bcad2a5d865a07c4f796781",
+    "tests/DRANN_tests.cpp": "836bd3873bae21e08fdb51e215f95ab9f4c3fdf6f8e333e4ca76732828b36509",
+    "graphics/DRANN_plot.cpp": "699f9e843732f006b5621a67d982cedca03799c95bb4df968189abc990f05e7e"
+  },
+  "compiler": "GCC 16.2.1 20260810, GNU libstdc++, Linux",
+  "cmake": "4.5.0",
+  "build_type": "Release, C++17, -Wall -Wextra -Wpedantic -Werror",
+  "neurons": 3,
+  "dimensions": 2,
+  "lr": 0.001,
+  "seed": 42,
+  "epochs": 1000,
+  "training_C": [
+    -40,
+    -20,
+    0,
+    20,
+    40,
+    60,
+    80,
+    100
+  ],
+  "validation_C": [
+    10,
+    70
+  ],
+  "shuffle": false,
+  "normalization": "x=C/100; y=(F/100,K/100); display=100*q",
+  "readout": "q[i,k]=alpha[i,k]*V_last[i]+beta[i,k], alpha=1 beta=0 initially, both trained by SGD",
+  "loss": "mean over participating neurons, sum over ordered coordinates (F,K), no division by D",
+  "summary": {
+    "initial": {
+      "epoch": "0",
+      "training_loss": "8.4946026806313064",
+      "validation_loss": "8.7715840468961943",
+      "training_mean_steps": "1.75",
+      "validation_mean_steps": "2",
+      "active_connections": "3",
+      "participating_neurons": "3",
+      "training_loss_fahrenheit": "0.66861718594320563",
+      "training_loss_kelvin": "7.8259854946881005",
+      "validation_loss_fahrenheit": "0.67396609497694027",
+      "validation_loss_kelvin": "8.0976179519192542"
+    },
+    "final": {
+      "epoch": "1000",
+      "training_loss": "0.18212777077839271",
+      "validation_loss": "0.073669405968024723",
+      "training_mean_steps": "2",
+      "validation_mean_steps": "2",
+      "active_connections": "3",
+      "participating_neurons": "3",
+      "training_loss_fahrenheit": "0.093714890431582945",
+      "training_loss_kelvin": "0.088412880346809747",
+      "validation_loss_fahrenheit": "0.038049368190383896",
+      "validation_loss_kelvin": "0.035620037777640827"
+    },
+    "physical_rmse": {
+      "training": {
+        "fahrenheit": 30.612887879385532,
+        "kelvin": 29.734303480460028
+      },
+      "validation": {
+        "fahrenheit": 19.50624725322221,
+        "kelvin": 18.873271517582964
+      }
+    }
+  }
+}
