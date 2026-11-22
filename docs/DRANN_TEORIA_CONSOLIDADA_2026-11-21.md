@@ -344,3 +344,19 @@ Asuntos de implementación histórica:
 - [#9](https://github.com/meirame/DRANN/issues/9): posible swap por conexiones con neuronas de una tarea subcongregada.
 
 **Regla de continuidad:** registrar qué es acuerdo conceptual y qué es solo candidato; no implementar sin decisión expresa. El siguiente trabajo es **diseñar la nueva ecuación transcendente**.
+
+
+## 14. Ideario experimental posterior — simetría frente a asimetría de la confianza (22-11-2026)
+
+**Decisión para la fase actual:** mantener **un único peso compartido por conexión**, con \(w_{ij}=w_{ji}\). El peso se interpreta como grado de **confianza mutua** entre las neuronas conectadas y también interviene en el intercambio diferencial de potencial. Solo \(w_{ij}>0\) define una conexión activa. Los pesos pueden evolucionar con la experiencia; se contempla aparición, debilitamiento, desaparición de conexiones y ablación de neuronas.
+
+**Experimento futuro expresamente solicitado:** contrastar este modelo de confianza simétrica con un modelo en el que \(w_{i\leftarrow j}\) y \(w_{j\leftarrow i}\) puedan ser diferentes. Motivo: una receptora puede perder confianza en una emisora que transmite conclusiones erróneas sin que la emisora pierda necesariamente confianza en la receptora. No se aprueba todavía la asimetría; preocupa duplicar los pesos de conexiones en modelos grandes.
+
+**Preguntas para la comparación experimental:**
+- ¿Mejora la precisión y generalización al aprender confianza dirigida?
+- ¿Facilita la detección, reducción de influencia y rehabilitación de falsos líderes?
+- ¿Qué coste adicional de parámetros y memoria ocasiona, especialmente en rizomas grandes?
+- ¿Cómo cambia la dinámica de intercambio diferencial si la confianza deja de ser simétrica?
+- ¿Compensa explorar una representación híbrida con peso compartido y asimetrías almacenadas solo cuando aparezcan?
+
+**No introducir un segundo peso por dirección ni una segunda matriz de confianza en la versión actual.** Conservar esta posibilidad exclusivamente en el ideario experimental.
