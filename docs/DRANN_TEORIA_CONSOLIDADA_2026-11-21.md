@@ -360,3 +360,19 @@ Asuntos de implementación histórica:
 - ¿Compensa explorar una representación híbrida con peso compartido y asimetrías almacenadas solo cuando aparezcan?
 
 **No introducir un segundo peso por dirección ni una segunda matriz de confianza en la versión actual.** Conservar esta posibilidad exclusivamente en el ideario experimental.
+
+## 15. Ideario experimental posterior — meritocracia estricta y diferencial como incentivo comunicativo (22-11-2026)
+
+**Decisión actual (no experimental):** mantener la amplificación por liderazgo del tipo **\(1+L_i\)** para que incluso neuronas sin liderazgo reconocido puedan comunicar. El liderazgo \(\,L_i\in[0,1]\,\) es gradual, adquirido por aciertos, revisable y puede influir **tanto en la intensidad de emisión como en la persistencia/alcance** del conocimiento al propagarse. Ni el liderazgo ni la comunicación justifican copiar parámetros o trayectorias ajenas.
+
+**Alternativa solicitada para estudio futuro — meritocracia estricta:** comparar la multiplicación directa de la intensidad de emisión por **\(L_i\)**, en lugar de **\(1+L_i\)**. En una expresión ilustrativa previa con potencial no negativo se consideraba \(\Gamma_{i\to j}=c_{ij}V_iL_i\), frente a \(c_{ij}V_i(1+L_i)\); **ninguna de esas expresiones se adopta como definitiva**, ya que ahora se admiten potenciales negativos y la comunicación se reinterpreta como impulsada por el diferencial. La idea interesante es privilegiar la difusión de enseñanzas de neuronas con mayor mérito.
+
+**Pros a investigar:** selección de fuentes con competencia demostrada, reducción de interferencias de mensajes erróneos, debilitamiento funcional de falsos líderes sin ablación, mayor eficiencia comunicativa y revalorización progresiva mediante nuevos aciertos.
+
+**Contras a investigar:** silenciamiento de neuronas sin historial (\(L_i=0\)), dificultad para descubrir conocimiento nuevo, concentración de poder comunicativo, cámaras de eco, falso liderazgo, y especialización contextual (liderazgo global que no equivale a competencia para cada fenómeno). Notar que \(L_i\in[0,1]\) **atenúa** la intensidad base, no la amplifica por encima de ella.
+
+**Decisión conceptual adicional:** el **diferencial de potencial** \(\Delta V_{ij}^{(\tau)}=V_i^{(\tau)}-V_j^{(\tau)}\) es una **fuerza que impulsa la interacción y comunicación**, no solamente una corriente inmanente paralela a un deseo de comunicarse independiente. Se permite \(V_i^{(\tau)}<0\); el signo del diferencial da sentido y su magnitud favorece una corriente mayor, \(J_{i\to j}^{(\tau)}=c_{ij}\Delta V_{ij}^{(\tau)}\), con \(c_{ij}=c_{ji}>0\) en enlaces activos. La intensidad de corriente crece con \(|\Delta V|\) a confianza fija.
+
+**Compatibilidad pendiente de formalizar:** ya se acordó que **dos neuronas con igual potencial deben poder comunicarse y aprender entre sí**, aunque \(J_{i\to j}=0\). Por tanto, la nueva interpretación del diferencial como incentivo o fuerza comunicativa **no debe convertirlo en requisito exclusivo** de la comunicación. Diseñar una componente comunicativa de base o condición equivalente sin introducir parámetros injustificados; separar el contenido \(\mathcal C_i=(\mathcal E_i,\mathcal K_i,\vec q_i)\), la confianza \(c_{ij}\), el liderazgo \(L_i\), la corriente y la intensidad comunicativa. Se acordó eliminar la función de modulación \(\mathcal M\) y no introducir \(\nu\) sin justificación.
+
+**Estado:** reflexión matemática/conceptual, no implementación aprobada.
