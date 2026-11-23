@@ -376,3 +376,69 @@ Asuntos de implementación histórica:
 **Compatibilidad pendiente de formalizar:** ya se acordó que **dos neuronas con igual potencial deben poder comunicarse y aprender entre sí**, aunque \(J_{i\to j}=0\). Por tanto, la nueva interpretación del diferencial como incentivo o fuerza comunicativa **no debe convertirlo en requisito exclusivo** de la comunicación. Diseñar una componente comunicativa de base o condición equivalente sin introducir parámetros injustificados; separar el contenido \(\mathcal C_i=(\mathcal E_i,\mathcal K_i,\vec q_i)\), la confianza \(c_{ij}\), el liderazgo \(L_i\), la corriente y la intensidad comunicativa. Se acordó eliminar la función de modulación \(\mathcal M\) y no introducir \(\nu\) sin justificación.
 
 **Estado:** reflexión matemática/conceptual, no implementación aprobada.
+
+## 16. Experiencia individual: memoria temporal aprobada y dos ideas pospuestas (23-11-2026)
+
+### Decisión vigente: experiencia actual e histórica
+
+Se mantiene la separación conceptual
+
+\[
+\mathcal E_i^{(\tau)}=
+\bigl(\mathcal E_{i,\mathrm{actual}}^{(\tau)},
+\mathcal E_{i,\mathrm{hist}}^{(\tau)}\bigr).
+\]
+
+**Aprobado como punto de partida:** utilizar una media móvil para conservar la experiencia histórica con olvido progresivo,
+
+\[
+\boxed{
+\mathcal E_{i,\mathrm{hist}}^{(\tau)}
+=(1-\mu_E)\mathcal E_{i,\mathrm{hist}}^{(\tau-1)}
++\mu_E\mathcal E_{i,\mathrm{actual}}^{(\tau)},
+\quad 0<\mu_E\le 1.
+}
+\]
+
+Se exige que ambos términos tengan estructura compatible para efectuar la combinación. **No se ha aprobado aún la composición ni dimensión concreta de la experiencia actual**, ni el valor de \(\mu_E\). Entre las magnitudes candidatas: potencial propio \(V_i\), variación temporal del potencial \(V_i^{(\tau)}-V_i^{(\tau-1)}\), balance de corrientes incidentes, suma de magnitudes de corrientes incidentes, intensidad total comunicativa recibida, manifestación individual \(\vec q_i\) y su desplazamiento entre ciclos. Un vector con estas magnitudes tendría \(5+2d\) componentes si \(d=\dim(\vec\xi)\), pero **es solo un candidato, no un acuerdo definitivo**. No convertir las discrepancias entre posiciones \(\vec q_i-\vec q_j\) en errores: trayectorias individuales diferentes pueden converger al mismo ideal.
+
+### Ideario futuro 1 — memoria matricial de asociaciones entre experiencias (pospuesto)
+
+Explorar si, además de la media móvil de observaciones, merece la pena registrar asociaciones temporales entre componentes de la experiencia mediante una matriz de productos cruzados:
+
+\[
+\mathcal R_i^{(\tau)}
+=(1-\mu_R)\mathcal R_i^{(\tau-1)}
++\mu_R\,\vec{\mathcal E}_{i,\mathrm{actual}}^{(\tau)}
+\vec{\mathcal E}_{i,\mathrm{actual}}^{(\tau)\top}.
+\]
+
+**No incorporar por ahora.** Comprobar si ofrece valor adicional frente a \(\mathcal K_i\), si genera redundancia o costes cuadráticos, y recordar que un producto cruzado medio no constituye automáticamente una correlación ni una relación causal.
+
+### Ideario futuro 2 — medias móviles de error cognifenomenológico (pospuesto)
+
+**Idea válida para investigar más adelante, pero expresamente aparcada por ahora**: durante entrenamiento supervisado, medir el error individual respecto al ideal
+
+\[
+\vec e_i^{(\tau)}(x)=\vec\xi(x)-\vec q_i^{(\tau)}(x)
+\]
+
+y mantener dos memorias para no perder información cuando errores de signos opuestos se cancelan:
+
+\[
+\overline{\vec e}_i^{(\tau)}
+=(1-\mu_e)\overline{\vec e}_i^{(\tau-1)}
++\mu_e\vec e_i^{(\tau)}(x),
+\]
+
+\[
+\overline{\varepsilon}_i^{(\tau)}
+=(1-\mu_e)\overline{\varepsilon}_i^{(\tau-1)}
++\mu_e\|\vec e_i^{(\tau)}(x)\|.
+\]
+
+La primera representa sesgo/dirección típica; la segunda, magnitud habitual. No almacenar directamente cada error de ejemplo en \(\mathcal K_i\); eventualmente estudiar las medias como memoria auxiliar asociada al aprendizaje. Idea de aplicación futura: comparar errores sobre ejemplos equivalentes para detectar neuronas que progresan peor que sus congéneres y **acelerar su aprendizaje**, no desplazarlas automáticamente hacia las posiciones de las otras neuronas. **La etiqueta ideal solo está disponible durante entrenamiento/evaluación**: validación sin backward ni actualización de memorias aprendidas; inferencia sin error supervisado disponible ni dependencia de este en el forward. **No activar estas medias móviles ahora.**
+
+**Otras decisiones recientes de diseño:** no introducir RNG por ahora; descartar ANN individuales dentro de cada neurona; se sigue explorando \(\mathcal K_i\) como tensor/matriz estructurado con alguna dimensión vinculada a \(d=\dim(\vec\xi)\), sin adoptar aún una forma final. La intensidad comunicativa con escala \(\lambda\) y la variante de saturación se han considerado candidatas, pero no se aprueba aún sustituir la primera por la segunda. Para asimilación, mantener provisionalmente suma de contribuciones \(\sum_{j\in\mathcal N(i)}\Delta\mathcal K_{i\leftarrow j}\), sin coeficiente de aceptación \(\alpha\) separado.
+
+**Siguiente tarea:** seleccionar y justificar los componentes de \(\mathcal E_{i,\mathrm{actual}}\), eliminar redundancias y después investigar cómo la experiencia modifica \(\mathcal K_i\). No implementar.
