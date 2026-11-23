@@ -400,7 +400,38 @@ Se mantiene la separación conceptual
 }
 \]
 
-Se exige que ambos términos tengan estructura compatible para efectuar la combinación. **No se ha aprobado aún la composición ni dimensión concreta de la experiencia actual**, ni el valor de \(\mu_E\). Entre las magnitudes candidatas: potencial propio \(V_i\), variación temporal del potencial \(V_i^{(\tau)}-V_i^{(\tau-1)}\), balance de corrientes incidentes, suma de magnitudes de corrientes incidentes, intensidad total comunicativa recibida, manifestación individual \(\vec q_i\) y su desplazamiento entre ciclos. Un vector con estas magnitudes tendría \(5+2d\) componentes si \(d=\dim(\vec\xi)\), pero **es solo un candidato, no un acuerdo definitivo**. No convertir las discrepancias entre posiciones \(\vec q_i-\vec q_j\) en errores: trayectorias individuales diferentes pueden converger al mismo ideal.
+**Decisión posterior de 23-11-2026, que sustituye el listado provisional:** la experiencia actual queda definida por **tres magnitudes** y no almacena variaciones temporales:
+
+\[
+\boxed{
+\vec{\mathcal E}_{i,\mathrm{actual}}^{(\tau)}
+=
+\begin{pmatrix}
+V_i^{(\tau)}\\
+A_i^{(\tau)}\\
+G_i^{(\tau)}
+\end{pmatrix}
+\in\mathbb R^3
+}
+\]
+
+Con la vecindad activa \(\mathcal N(i)\), usar **explícitamente** \(|\mathcal N(i)|\) y no una variable abreviada:
+
+\[
+A_i^{(\tau)}
+=
+\frac{1}{|\mathcal N(i)|}
+\sum_{j\in\mathcal N(i)}|J_{j\to i}^{(\tau)}|,
+\qquad
+G_i^{(\tau)}
+=
+\frac{1}{|\mathcal N(i)|}
+\sum_{j\in\mathcal N(i)}\Gamma_{j\to i}^{(\tau)}.
+\]
+
+Para \(|\mathcal N(i)|=0\), adoptar \(A_i=G_i=0\). La experiencia histórica aplica la media móvil ya aprobada sobre el mismo vector de tres componentes; no se fija aún \(\mu_E\). La media, no la suma, evita que el registro de actividad dependa mecánicamente del número de vecinos.
+
+**Prioridad semántica:** no interesa transmitir anécdotas ni sucesos sin valor. El objetivo de \(\mathcal C_i=(\mathcal E_i,\mathcal K_i,\vec q_i)\) es que las demás neuronas puedan conocer **qué circunstancias vivió \(i\)** (\(\mathcal E_i\)), **qué aprendió sobre cómo responder a ellas para estimar** (\(\mathcal K_i\)) y **qué respuesta manifestó** (\(\vec q_i\)). Evitar duplicar \(\vec q_i\) dentro de la experiencia, ya que se transmite por separado. Aún queda por demostrar cómo \(\mathcal K_i\) codifica relaciones entre circunstancias, métodos y resultados: las tres magnitudes agregadas no contienen por sí solas el contenido ni la causalidad de cada mensaje recibido. No convertir diferencias entre posiciones de neuronas en errores automáticos.
 
 ### Ideario futuro 1 — memoria matricial de asociaciones entre experiencias (pospuesto)
 
@@ -441,4 +472,16 @@ La primera representa sesgo/dirección típica; la segunda, magnitud habitual. N
 
 **Otras decisiones recientes de diseño:** no introducir RNG por ahora; descartar ANN individuales dentro de cada neurona; se sigue explorando \(\mathcal K_i\) como tensor/matriz estructurado con alguna dimensión vinculada a \(d=\dim(\vec\xi)\), sin adoptar aún una forma final. La intensidad comunicativa con escala \(\lambda\) y la variante de saturación se han considerado candidatas, pero no se aprueba aún sustituir la primera por la segunda. Para asimilación, mantener provisionalmente suma de contribuciones \(\sum_{j\in\mathcal N(i)}\Delta\mathcal K_{i\leftarrow j}\), sin coeficiente de aceptación \(\alpha\) separado.
 
-**Siguiente tarea:** seleccionar y justificar los componentes de \(\mathcal E_{i,\mathrm{actual}}\), eliminar redundancias y después investigar cómo la experiencia modifica \(\mathcal K_i\). No implementar.
+**Siguiente tarea actualizada:** con la experiencia mínima fijada, investigar cómo \(\mathcal K_i\) registra y utiliza relaciones entre circunstancias, respuesta de la neurona y manifestación transcendente sin crear ANN individuales. No implementar.
+
+
+## 17. Ideario experimental — variaciones temporales eliminadas de la experiencia vigente (23-11-2026)
+
+**Petición expresa:** retirar **todos los deltas temporales** de la experiencia actual, sin descartarlos del ideario futuro. No confundir con el potencial **entre neuronas** \(\Delta V_{ij}=V_i-V_j\) que continúa siendo esencial en la corriente y comunicación.
+
+- Variación temporal del potencial: \(\delta_\tau V_i^{(\tau)}=V_i^{(\tau)}-V_i^{(\tau-1)}\). Hipótesis futura: informa de perturbaciones o tendencias de actividad; hoy no se ha justificado que el receptor necesite conocerla o que mejore la asimilación frente al estado actual y su media móvil.
+- Desplazamiento transcendente: \(\delta_\tau\vec q_i^{(\tau)}=\vec q_i^{(\tau)}-\vec q_i^{(\tau-1)}\). Hipótesis futura: permite representar dirección de movimiento ideológico; hoy se transmite directamente \(\vec q_i\) y no se ha establecido una regla de aprendizaje que necesite su variación.
+- Variación del conocimiento: \(\delta_\tau\mathcal K_i^{(\tau)}=\mathcal K_i^{(\tau)}-\mathcal K_i^{(\tau-1)}\), o su norma. Hipótesis futura: indica repercusión de los mensajes y experiencias sobre el conocimiento, pero **un cambio grande no demuestra una mejora**. No incorporarla hasta definir la estructura de \(\mathcal K_i\).
+- Como alternativa eventual a los incrementos entre dos ciclos, comparar una magnitud actual con su media histórica para medir desviaciones de tendencia; **no es equivalente a una diferencia temporal** y tampoco se activa por ahora.
+
+**Regla actual:** experiencia actual de solo \((V_i,A_i,G_i)\), memoria histórica por media móvil, sin deltas temporales. La manifestación \(\vec q_i\) forma parte del contenido del mensaje por separado, y la pregunta central pendiente es cómo comunicar y asimilar **las relaciones útiles** entre condiciones vividas, la forma en que la neurona respondió, y la estimación que obtuvo.
