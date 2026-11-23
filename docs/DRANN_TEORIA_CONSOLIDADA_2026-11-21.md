@@ -485,3 +485,60 @@ La primera representa sesgo/dirección típica; la segunda, magnitud habitual. N
 - Como alternativa eventual a los incrementos entre dos ciclos, comparar una magnitud actual con su media histórica para medir desviaciones de tendencia; **no es equivalente a una diferencia temporal** y tampoco se activa por ahora.
 
 **Regla actual:** experiencia actual de solo \((V_i,A_i,G_i)\), memoria histórica por media móvil, sin deltas temporales. La manifestación \(\vec q_i\) forma parte del contenido del mensaje por separado, y la pregunta central pendiente es cómo comunicar y asimilar **las relaciones útiles** entre condiciones vividas, la forma en que la neurona respondió, y la estimación que obtuvo.
+
+
+## 18. Repliegue deliberado al núcleo experimental mínimo (23-11-2026)
+
+**Nueva directriz aprobada por el usuario:** detener la acumulación de mecanismos anticipatorios. Primero construir una dinámica básica **rizomática y recurrente**, observar fallos reales y solo entonces recuperar herramientas que resuelvan dificultades verificadas. Los acuerdos conceptuales no desaparecen: **quedan aparcados, no revocados**. Evitar presentar propuestas pendientes como si fueran decisiones definitivas.
+
+### Núcleo que sí se desea explorar ahora
+
+- Neuronas con potenciales escalares \(V_i^{(\tau)}\), rizoma de conexiones de confianza \(c_{ij}=c_{ji}>0\) en aristas activas, corriente firmada \(J_{i\to j}^{(\tau)}=c_{ij}(V_i^{(\tau)}-V_j^{(\tau)})\).
+- Recurrencia local en ciclos \(\tau\): primero evolución/información rizomática, después nueva manifestación transcendente, que estará disponible en el **siguiente** ciclo de comunicación. No introducir dependencia simultánea implícita.
+- Posición transcendente individual \(\vec q_i^{(\tau)}\in\mathbb R^{\dim(\vec\xi)}\), inicialmente con \(\vec b_i^{(tr)}\) y \(\vec I_i^{(tr)}\), **pero no limitarla para siempre a una recta afín**. Debe incorporarse información del rizoma, sin red ANN privada.
+- Conservar como meta la convergencia por fenómeno al ejemplo ideal, sin imponer identidad de potenciales ni de parámetros neuronales. Lector KDE continúa siendo orientación conceptual elegida, aunque puede posponerse al comprobar primero el forward mínimo.
+
+### Aprobado previamente, pero fuera del primer experimento
+
+1. **Experiencia individual** \(\mathcal E_i=(\mathcal E_{i,\mathrm{actual}},\mathcal E_{i,\mathrm{hist}})\): vector actual \((V_i,A_i,G_i)^\top\), con \(A_i=\sum_{j\in\mathcal N(i)}|J_{j\to i}|/|\mathcal N(i)|\), \(G_i=\sum_{j\in\mathcal N(i)}\Gamma_{j\to i}/|\mathcal N(i)|\), ambos cero si no hay vecinos; memoria histórica por media móvil exponencial de coeficiente \(\mu_E\). **Conservar como acuerdo, no exigir su implementación inicial.**
+2. **Contenido informativo** \(\mathcal C_i=(\mathcal E_i,\mathcal K_i,\vec q_i)\), como aspiración de comunicación de circunstancias relevantes, modo de responder y estimación obtenida. En el prototipo básico basta provisionalmente con transmitir \(\vec q_i\); transmisión íntegra de \(\mathcal C\) pendiente.
+3. **Conocimiento individual distribuido** \(\mathcal K_i\): refleja cómo alcanzar las distintas componentes del ideal y por ello tendrá estructura ligada al número \(\dim(\vec\xi)\). Las neuronas deben poder aprender e interpretar sin copia directa. **Su estructura, regla de actualización y decisión parámetro/estado NO están aprobadas**. La matriz de dimensión \(\dim(\vec\xi)\times6\) y su producto por experiencia actual/histórica fueron una **candidata no adoptada**, no un acuerdo.
+4. **Liderazgo gradual** \(L_i\in[0,1]\), adquirido por acierto repetido en supervisión, reversible y con potencial efecto en emisión y persistencia de enseñanzas. Se prefirió factor \(1+L_i\) frente a \(L_i\) para mantener voz en principiantes. **Aparcar su activación** hasta saber si el prototipo la necesita.
+5. **Intensidad comunicativa**: se eligió provisionalmente \(\Gamma_{i\to j}=(1+L_i)(c_{ij}+\lambda|J_{i\to j}|)\) con factor de escala \(\lambda\), sujeto a estudio; la expresión con saturación \(\Gamma_{i\to j}=c_{ij}(1+L_i)\bigl(1+\lambda|\Delta V_{ij}|/(1+\lambda|\Delta V_{ij}|)\bigr)\) es **candidata interesante, no adoptada**. Ambas pueden quedar fuera del prototipo, que solo usa \(c_{ij}\) para transmitir estados.
+6. **Asimilación individual de enseñanzas**: idea provisional de suma de modificaciones \(\mathcal K_j^{(\tau+1)}=\mathcal K_j^{(\tau)}+\sum_i\Delta\mathcal K_{j\leftarrow i}\); sin nuevo coeficiente \(\alpha\) de aceptación. No implementar antes de descubrir qué necesita la arquitectura.
+7. **Ideas ya expresamente pospuestas**: matriz de asociaciones de experiencias \(\mathcal R_i\), medias móviles de error cognifenomenológico supervisado, variaciones temporales del potencial, posición y conocimiento, confianza dirigida, meritocracia estricta, reglas de influencia y congregación, pulso, hibernación y ablación; ver secciones anteriores. **Sin RNG ni ANN individuales**, por decisión actual.
+
+### Primeras ecuaciones candidatas para una dinámica mínima (NO aprobadas todavía)
+
+Con entradas \(x\) que determinan estados iniciales \(V_i^{(0)}(x)\) (mecanismo de entrada pendiente), la difusión inmanente firmada más sencilla sería:
+
+\[
+V_i^{(\tau+1)}
+=
+V_i^{(\tau)}
++
+\eta\sum_{j\in\mathcal N(i)}
+c_{ij}(V_j^{(\tau)}-V_i^{(\tau)}),
+\]
+
+con \(\eta>0\) como tamaño de paso, sujeto a estabilidad. Para que la nueva manifestación dependa realmente del rizoma y no solo de un potencial escalar individual, estudiar:
+
+\[
+\boxed{
+\vec q_i^{(\tau+1)}
+=
+\vec b_i^{(tr)}
++
+\vec I_i^{(tr)}V_i^{(\tau+1)}
++
+\frac{
+\sum_{j\in\mathcal N(i)}c_{ij}\vec q_j^{(\tau)}
+}{
+1+\sum_{j\in\mathcal N(i)}c_{ij}
+}.
+}
+\]
+
+Para neuronas sin vecinos, la fracción vale cero; inicializar \(\vec q_i^{(0)}=\vec b_i^{(tr)}+\vec I_i^{(tr)}V_i^{(0)}\). Se reutilizan los mismos \(c_{ij}\), sin una ANN privada, sin coeficientes nuevos en el acoplamiento y sin necesidad de conocimiento ni experiencia explícitos. El denominador conserva la magnitud **absoluta** de la confianza (una arista de confianza casi cero implica influencia casi cero incluso cuando es la única), y acota la suma de influencias vecinales frente a repetir sin límite. Las \(\vec q_j^{(\tau)}\) son mensajes del ciclo anterior, evitando un lazo algebraico instantáneo.
+
+**Limitaciones que deben medirse, no esconderse:** (i) la evolución inmanente puramente difusiva tiende a igualar potenciales y puede borrar información de entrada; (ii) añadir posiciones de vecinas puede fomentar imitación o convergencia a un punto erróneo, no aprendizaje independiente; (iii) esta regla sigue siendo lineal en los estados para parámetros fijos y no resuelve por sí sola tareas arbitrariamente no lineales; (iv) en la candidata, \(\vec q\) influye en manifestaciones posteriores a través de la comunicación, pero **no retroalimenta aún la actualización escalar de \(V\)**. Si se exige retorno directo al potencial, habrá que añadirlo justificadamente tras probar el modelo mínimo. **No confundir candidata con acuerdo aprobado ni implementarla todavía sin permiso.**
