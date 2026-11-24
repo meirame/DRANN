@@ -542,3 +542,31 @@ con \(\eta>0\) como tamaño de paso, sujeto a estabilidad. Para que la nueva man
 Para neuronas sin vecinos, la fracción vale cero; inicializar \(\vec q_i^{(0)}=\vec b_i^{(tr)}+\vec I_i^{(tr)}V_i^{(0)}\). Se reutilizan los mismos \(c_{ij}\), sin una ANN privada, sin coeficientes nuevos en el acoplamiento y sin necesidad de conocimiento ni experiencia explícitos. El denominador conserva la magnitud **absoluta** de la confianza (una arista de confianza casi cero implica influencia casi cero incluso cuando es la única), y acota la suma de influencias vecinales frente a repetir sin límite. Las \(\vec q_j^{(\tau)}\) son mensajes del ciclo anterior, evitando un lazo algebraico instantáneo.
 
 **Limitaciones que deben medirse, no esconderse:** (i) la evolución inmanente puramente difusiva tiende a igualar potenciales y puede borrar información de entrada; (ii) añadir posiciones de vecinas puede fomentar imitación o convergencia a un punto erróneo, no aprendizaje independiente; (iii) esta regla sigue siendo lineal en los estados para parámetros fijos y no resuelve por sí sola tareas arbitrariamente no lineales; (iv) en la candidata, \(\vec q\) influye en manifestaciones posteriores a través de la comunicación, pero **no retroalimenta aún la actualización escalar de \(V\)**. Si se exige retorno directo al potencial, habrá que añadirlo justificadamente tras probar el modelo mínimo. **No confundir candidata con acuerdo aprobado ni implementarla todavía sin permiso.**
+
+
+## 19. Núcleo recurrente: acuerdos posteriores y tamaño de paso adaptativo en el ideario (24-11-2026)
+
+**Decisiones vigentes que prevalecen sobre las formulaciones históricas:**
+
+- Se adopta provisionalmente la expresión transcendente de la sección 18:
+\[
+\vec q_i^{(\tau+1)}
+=\vec b_i^{(tr)}+\vec I_i^{(tr)}V_i^{(\tau+1)}
++\frac{\sum_{j\in\mathcal N(i)}c_{ij}\vec q_j^{(\tau)}}
+{1+\sum_{j\in\mathcal N(i)}c_{ij}}.
+\]
+- Para la dinámica inmanente básica, mantener \(V_i^{(\tau+1)}=V_i^{(\tau)}+\eta\sum_{j\in\mathcal N(i)}J_{j\to i}^{(\tau)}\), con \(J_{j\to i}^{(\tau)}=c_{ij}(V_j^{(\tau)}-V_i^{(\tau)})\). **\(\eta>0\) será un hiperparámetro fijo, no entrenable, por decisión expresa.** Su valor numérico no está fijado.
+- Emplear inicialmente un número finito y fijo de ciclos \(\tau_{\max}\) durante el entrenamiento; no exigir equilibrio inmanente.
+- Nueva nomenclatura: \(\mathring V^{(\tau)}=N^{-1}\sum_iV_i^{(\tau)}\) para potencial medio del rizoma; \(V_i^{(h)}\) para potencial de neurona hibernada. Sustituye las convenciones históricas incompatibles. Usar \(\tau\) como índice de ciclo.
+- Con topología y confianzas fijas y simétricas durante el forward, la difusión conserva el potencial medio. Una condición suficiente para acotación y consenso por componente conexa es \(0<\eta<1/\max_i\sum_{j\in\mathcal N(i)}c_{ij}\) cuando existen conexiones activas. Si las confianzas crecen durante el entrenamiento, comprobar de nuevo la condición; un hiperparámetro fijo no garantiza por sí solo estabilidad para todos los pesos posibles.
+- Diagnóstico propuesto, no parte del forward: varianza de potenciales \(\sigma_V^{2(\tau)}=N^{-1}\sum_i(V_i^{(\tau)}-\mathring V^{(\tau)})^2\) y proporción final/inicial cuando la varianza inicial no es cero. Observar pérdida de diversidad sin introducir mecanismos correctivos preventivos.
+
+### Ideario experimental — tamaño de paso inmanente dependiente de las confianzas
+
+**Pospuesto expresamente por el usuario.** Comparar en el futuro el hiperparámetro fijo con la alternativa
+\[
+\eta=\frac{1}{2\max_i\sum_{j\in\mathcal N(i)}c_{ij}}.
+\]
+Si no existen conexiones activas, no hay intercambio y no es necesario evaluar esa fracción. Con confianzas simétricas no negativas y fijas durante el forward, esta elección garantiza que el operador de difusión tiene autovalores en \([0,1]\), evitando modos de signo alternante y asegurando acotación. No confundir el tamaño de paso inmanente con la tasa de aprendizaje del optimizador. Estudiar coste de reducción global, sensibilidad a conexiones extremas, efecto de reescalar todas las confianzas (se cancela en la dinámica inmanente) y tratamiento de la dependencia de \(\eta\) respecto a parámetros entrenables en el backward. **No activar esta alternativa ahora.**
+
+No se modifica código. Continuar con el análisis de estabilidad transcendente y la utilidad experimental de la recurrencia, sin agregar mecanismos innecesarios.
