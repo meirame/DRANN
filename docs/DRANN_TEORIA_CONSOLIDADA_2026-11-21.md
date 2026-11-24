@@ -592,3 +592,22 @@ La parametrización, inicialización numérica y regla de recorte se concretará
 **Pospuesta expresamente.** Frente a excitar el rizoma únicamente en \(\tau=0\) y permitir su evolución libre durante un número finito de ciclos, explorar más adelante si conviene mantener una aportación externa dependiente de \(x\) durante la dinámica inmanente. Posible motivación: contrarrestar la pérdida de información inicial por difusión. Estudiar si la excitación repetida impide conservar el potencial medio, aumenta la amplificación o modifica la estabilidad; comparar con el prototipo sin excitación continuada. No se ha definido ni aprobado su ley matemática, y no debe introducirse en el prototipo actual.
 
 **Siguiente cuestión:** definir la naturaleza y el recorte de las conexiones de entrada, sin confundirlas con la confianza interna. No se modifica código.
+
+
+## 21. Reactivación de conexiones y distinción entre hibernación y ablación (24-11-2026)
+
+**Decisión vigente:** una conexión inactiva debe poder reactivarse conceptualmente; una neurona hibernada debe poder reincorporarse al rizoma. Se mantiene la distinción ya establecida entre **neurona activa**, **neurona hibernada** (retirada reversible, conserva los parámetros necesarios) y **neurona ablada** (eliminación definitiva). La ablación no es sinónimo de hibernación. Los criterios de retirada, recuperación y eliminación definitiva todavía deben concretarse. No se modifica código.
+
+### Ideario experimental — reactivación por derivada lateral (prioridad alta)
+
+**Alternativa preferida expresamente por el usuario, pospuesta para después del prototipo mínimo.** Para una conexión rizomática inactiva, estudiar el gradiente lateral desde el lado activo:
+
+\[
+\left.\frac{\partial\mathcal L}{\partial c_{ij}}\right|_{c_{ij}=0^+}.
+\]
+
+Evaluarlo con los estados y adjuntos del forward del rizoma activo, incorporando las dos contribuciones inmanentes y las dos transcendentes de la conexión compartida a lo largo de todos los ciclos. La derivada mide el efecto local de introducir una confianza positiva infinitesimal, aun cuando el gradiente ordinario de una conexión excluida sea cero. Un valor negativo indica mejora a primer orden; uno positivo, empeoramiento; uno nulo no descarta mejoras de orden superior. La evaluación debe corresponder a la frontera cero, no al valor negativo de un parámetro enmascarado. No es garantía de mejora para una reactivación de magnitud finita ni para todo el conjunto de entrenamiento.
+
+**Orden de prioridad propuesto:** alta, primera opción para investigar reactivación de conexiones tras disponer del forward/backward básico y de un criterio de inactivación; por delante de mecanismos más complejos de experiencia, conocimiento y liderazgo cuando el objetivo sea recuperar conectividad. No ejecutar en el prototipo actual. Estudiar evaluación periódica o selectiva para conservar las ventajas de la dispersidad estructural, sin fijar todavía frecuencia, umbral ni magnitud de reactivación. Conservar la alternativa de simulacros de reactivación como secundaria si la derivada lateral resulta insuficiente.
+
+**Siguiente cuestión de diseño:** concretar el mecanismo de hibernación y ablación neuronal, respetando los acuerdos anteriores de la sección 11 y revisándolos a la luz del núcleo recurrente y la pérdida KDE actuales.
