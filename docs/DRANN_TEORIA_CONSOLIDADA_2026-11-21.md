@@ -611,3 +611,24 @@ Evaluarlo con los estados y adjuntos del forward del rizoma activo, incorporando
 **Orden de prioridad propuesto:** alta, primera opción para investigar reactivación de conexiones tras disponer del forward/backward básico y de un criterio de inactivación; por delante de mecanismos más complejos de experiencia, conocimiento y liderazgo cuando el objetivo sea recuperar conectividad. No ejecutar en el prototipo actual. Estudiar evaluación periódica o selectiva para conservar las ventajas de la dispersidad estructural, sin fijar todavía frecuencia, umbral ni magnitud de reactivación. Conservar la alternativa de simulacros de reactivación como secundaria si la derivada lateral resulta insuficiente.
 
 **Siguiente cuestión de diseño:** concretar el mecanismo de hibernación y ablación neuronal, respetando los acuerdos anteriores de la sección 11 y revisándolos a la luz del núcleo recurrente y la pérdida KDE actuales.
+
+
+## 22. Hibernación durante el entrenamiento y reactivación neuronal lateral pospuesta (24-11-2026)
+
+**Decisiones expresas que prevalecen sobre las formulaciones anteriores:** la distinción entre hibernación y ablación viene dada por el momento del entrenamiento: toda neurona hibernada que no se haya reincorporado al finalizar el entrenamiento pasa a estar ablada definitivamente. Durante el entrenamiento, la retirada es conceptualmente reversible. Para el prototipo actual se empleará únicamente Group Lasso como mecanismo de regularización estructural. No implementar ahora reactivación mediante derivadas laterales, aprendizaje auxiliar de hibernadas ni simulacros adicionales. La forma exacta de aplicar Group Lasso, declarar hibernación y tratar los grupos nulos queda por decidir.
+
+### Ideario experimental — reactivación neuronal por derivada lateral (prioridad alta, posterior a la de conexiones)
+
+**Pospuesto expresamente por el usuario.** Generalizar la idea de la sección 21 mediante un coeficiente auxiliar de participación neuronal \(a_i\in[0,1]\), no necesariamente entrenable: cero representa ausencia, uno participación completa. Estudiar
+\[
+\left.\frac{\partial\mathcal L}{\partial a_i}\right|_{a_i=0^+}.
+\]
+Para que sea una prueba de reincorporación integral, la participación debe modular tanto la influencia rizomática de la neurona sobre las demás como su contribución a la KDE normalizada:
+\[
+\rho(\vec z)=
+\frac{\sum_i a_i\exp[-\|\vec z-\vec q_i\|^2/(2h^2)]}
+{(2\pi h^2)^{\dim(\vec\xi)/2}\sum_i a_i}.
+\]
+Mantener \(h\) fijo al evaluar el gradiente de la pérdida neuronal \(\mathcal L=-\log\rho(\vec\xi)\). Exigir al menos una neurona activa. Un gradiente negativo indica beneficio infinitesimal, no garantiza beneficio de la reincorporación completa. Estudiar cómo calcular la posición de prueba de la hibernada y cómo modular su comunicación sin perturbar el rizoma activo cuando \(a_i=0\). La derivada lateral no proporciona automáticamente gradientes de aprendizaje a sus parámetros aislados.
+
+**Prioridad propuesta:** alta dentro de la futura reorganización reversible, después de comprobar el mecanismo lateral de conexiones, cuya derivación es más directa, y el Group Lasso del núcleo mínimo. No incorporar \(a_i\), evaluaciones laterales ni dinámica auxiliar al prototipo actual. No se modifica código.
