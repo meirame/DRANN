@@ -570,3 +570,25 @@ Para neuronas sin vecinos, la fracción vale cero; inicializar \(\vec q_i^{(0)}=
 Si no existen conexiones activas, no hay intercambio y no es necesario evaluar esa fracción. Con confianzas simétricas no negativas y fijas durante el forward, esta elección garantiza que el operador de difusión tiene autovalores en \([0,1]\), evitando modos de signo alternante y asegurando acotación. No confundir el tamaño de paso inmanente con la tasa de aprendizaje del optimizador. Estudiar coste de reducción global, sensibilidad a conexiones extremas, efecto de reescalar todas las confianzas (se cancela en la dinámica inmanente) y tratamiento de la dependencia de \(\eta\) respecto a parámetros entrenables en el backward. **No activar esta alternativa ahora.**
 
 No se modifica código. Continuar con el análisis de estabilidad transcendente y la utilidad experimental de la recurrencia, sin agregar mecanismos innecesarios.
+
+
+## 20. Percepción distribuida inicial, recorte de conexiones y excitación continuada pospuesta (24-11-2026)
+
+**Decisión expresa:** empezar con percepción distribuida, con todas las neuronas inicialmente conectadas a todas las componentes del fenómeno y entre sí (sin autoconexiones). La arquitectura debe poder aprender a recortar tanto las conexiones internas del rizoma como las conexiones de entrada. No imponer de antemano grupos receptores o percepciones parciales.
+
+La expresión de percepción distribuida propuesta y elegida como punto de partida es
+\[
+V_i^{(0)}(x)=b_i^{(in)}+
+\sum_{k=1}^{\dim(\vec x)}w_{ik}^{(in)}x_k.
+\]
+La parametrización, inicialización numérica y regla de recorte se concretarán posteriormente. Distinguir los pesos de entrada \(w_{ik}^{(in)}\) de las confianzas internas \(c_{ij}=c_{ji}>0\): un peso de entrada negativo puede aportar información útil y no debe considerarse por ello una conexión eliminada. El criterio de actividad de las conexiones de entrada aún no está cerrado. El fenómeno no se convierte en una neurona del rizoma.
+
+**Simetría:** el usuario observa que, con conectividad interna completa y neuronas inicialmente equivalentes, no importa cuál recibe una componente si solo se cambia su etiqueta. Esta equivalencia es por permutación de neuronas y sus parámetros; conectividad completa por sí sola no garantiza equivalencia si los sesgos, impulsos o confianzas ya son distintos. La percepción distribuida evita imponer de entrada una división receptora/no receptora. Objetivo experimental: permitir que neuronas que pierdan acceso directo a parte o toda la entrada puedan seguir estimando gracias al rizoma, sin imponer todavía una regla concreta de poda ni un objetivo de eliminación total.
+
+**Nomenclatura vigente:** llamar dispersión inmanente a \(\sigma_V^{2(\tau)}\) y dispersión cognifenomenológica a \(\sigma_q^{2(\tau)}\). Son diagnósticos; no forman parte del forward ni de la pérdida por defecto.
+
+### Ideario experimental — excitación continuada del rizoma
+
+**Pospuesta expresamente.** Frente a excitar el rizoma únicamente en \(\tau=0\) y permitir su evolución libre durante un número finito de ciclos, explorar más adelante si conviene mantener una aportación externa dependiente de \(x\) durante la dinámica inmanente. Posible motivación: contrarrestar la pérdida de información inicial por difusión. Estudiar si la excitación repetida impide conservar el potencial medio, aumenta la amplificación o modifica la estabilidad; comparar con el prototipo sin excitación continuada. No se ha definido ni aprobado su ley matemática, y no debe introducirse en el prototipo actual.
+
+**Siguiente cuestión:** definir la naturaleza y el recorte de las conexiones de entrada, sin confundirlas con la confianza interna. No se modifica código.
