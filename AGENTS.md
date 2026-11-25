@@ -80,7 +80,3 @@ Antes de escribir código, leer [la teoría consolidada](docs/DRANN_TEORIA_CONSO
 - Antes de cualquier entrega, comprobar que el código sigue siendo legible para el autor sin necesitar conocer un framework o una arquitectura de software ajenos.
 
 **Regla de revisión:** si el autor no puede seguir una ecuación de DRANN leyendo directamente su implementación en C++, simplificar el código antes de añadir más mecanismos.
-
-## 7. MORFEO — programa de entrenamiento y utilización
-
-**Decisión del autor (25-11-2026): DRANN se entrenará y se utilizará a través de un programa llamado MORFEO (Morfeo).** Tener presente este requisito al diseñar e implementar DRANN. No presuponer todavía la arquitectura, interfaz, tecnología ni mecanismo de integración de Morfeo: estos detalles quedan pendientes de aprobación. Esta decisión no modifica las ecuaciones de DRANN ni autoriza por sí sola la implementación de Morfeo.
