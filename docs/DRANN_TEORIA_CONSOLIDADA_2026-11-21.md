@@ -1043,4 +1043,8 @@ Si deja de cumplirse, advertir; no limitar las confianzas ni adaptar \(\eta\) au
 
 Conservar, sin implementar ahora, los mecanismos de las secciones históricas: reactivación lateral de conexiones (prioridad alta, primera opción), reactivación lateral neuronal (alta, posterior a conexiones), aprendizaje auxiliar de hibernadas, experiencia actual/histórica y sus asociaciones, conocimiento, influencia comunicativa, liderazgo y meritocracia, confianzas asimétricas, congregaciones persistentes y pulso, excitación continuada, tamaño de paso inmanente adaptativo, simulacros como alternativa futura y lector histórico. No introducir ANN individuales ni mecanismos adicionales para corregir por anticipado las limitaciones observadas.
 
+### Ideario futuro — MORFEO (25-11-2026)
+
+**Pospuesto expresamente por el autor: fuera del prototipo actual.** En una versión futura, DRANN se entrenará y se utilizará a través de un programa llamado MORFEO (Morfeo). No implementar MORFEO ni su integración en esta primera versión, ni condicionar el diseño del prototipo a una interfaz futura. Su arquitectura, tecnología, interfaz y mecanismo de integración quedan por definir.
+
 **Siguiente paso:** preparar implementación C++ en CPU del núcleo anterior y contrastarlo experimentalmente, empezando por forward y backward verificados antes de evaluar la reorganización por Group Lasso. Revisar primero los detalles operativos pendientes de la sección 29.3 sin tratarlos como decisiones ya aprobadas. Este checkpoint modifica documentación, no código.
