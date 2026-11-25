@@ -1,5 +1,5 @@
 # DRANN — Teoría consolidada y frontera de investigación
-**Fecha del estado:** 21 de noviembre de 2026.
+**Fecha del estado:** 25 de noviembre de 2026 (checkpoint del prototipo mínimo, secciones 23–30).
 **Carácter:** documento de continuidad conceptual. Distingue acuerdos, formulaciones provisionales y cuestiones abiertas. **No presupone implementación** de las propuestas. No sustituye automáticamente al código existente ni autoriza cambios de arquitectura.
 
 **Antecedente:** [checkpoint previo (20-11-2026)](DRANN_CONTINUIDAD_DISENO_2026-11-20.md). Esta síntesis conserva la arquitectura anterior para poder compararla con la nueva línea de lectura KDE.
@@ -632,3 +632,415 @@ Para que sea una prueba de reincorporación integral, la participación debe mod
 Mantener \(h\) fijo al evaluar el gradiente de la pérdida neuronal \(\mathcal L=-\log\rho(\vec\xi)\). Exigir al menos una neurona activa. Un gradiente negativo indica beneficio infinitesimal, no garantiza beneficio de la reincorporación completa. Estudiar cómo calcular la posición de prueba de la hibernada y cómo modular su comunicación sin perturbar el rizoma activo cuando \(a_i=0\). La derivada lateral no proporciona automáticamente gradientes de aprendizaje a sus parámetros aislados.
 
 **Prioridad propuesta:** alta dentro de la futura reorganización reversible, después de comprobar el mecanismo lateral de conexiones, cuya derivación es más directa, y el Group Lasso del núcleo mínimo. No incorporar \(a_i\), evaluaciones laterales ni dinámica auxiliar al prototipo actual. No se modifica código.
+
+
+# Prototipo mínimo de DRANN — especificación consolidada (25-11-2026)
+
+**Estado:** diseño teórico aceptado para iniciar la implementación en C++ sobre CPU. Las secciones 23–30 reúnen los acuerdos vigentes y prevalecen sobre las formulaciones históricas incompatibles de las secciones anteriores. No se presupone que el código existente implemente este diseño. Se conservan el ideario y los antecedentes, pero no se incorporan sus mecanismos al prototipo. Los detalles señalados como pendientes no son decisiones aprobadas.
+
+## 23. Datos, parámetros, inicialización y forward
+
+### 23.1. Convenciones y datos
+
+- Fenómeno \(\vec x\), ejemplo ideal vectorial \(\vec\xi(x)\), dimensión cognifenomenológica \(\dim(\vec\xi)\). Índice de ciclo rizomático \(\tau\), de época \(e\), de neurona \(i,j\), de componente ideal \(\mathrm{ej}\).
+- \(\mathcal D_{\mathrm{train}}\) es el conjunto de entrenamiento. Estandarizar por componente las entradas y salidas mediante \(z'=(z-\mu)/\sigma\), con estadísticas calculadas exclusivamente en entrenamiento; reutilizar las mismas en validación e inferencia. Las ecuaciones siguientes se entienden en el espacio estandarizado. Invertir la transformación de salida para expresar el cognifenómeno en unidades originales. Tratamiento de desviaciones exactamente nulas pendiente de concretar.
+- Cálculos en double (64 bits). CPU, Adam y minilotes. No ANN internas en cada neurona.
+- \(\mathcal A\) denota el conjunto activo y \(N=|\mathcal A|\) su tamaño. Inicialmente \(N=N_0>1\); se permite acabar con \(N=1\). Las sumas neuronales siguientes se restringen a activas salvo indicación contraria.
+- Confianzas internas simétricas, un solo parámetro por par no ordenado: \(c_{ij}=c_{ji}\). Sin autoconexiones. \(\mathcal N(i)\) son las vecinas activas con confianza positiva. Los pesos de entrada son distintos de las confianzas y pueden ser negativos.
+
+### 23.2. Inicialización aprobada
+
+Conectividad inicial completa entre neuronas y percepción de todas las componentes por todas ellas. Para \(i\ne j\):
+\[
+c_{ij}=\frac1{N_0-1},\qquad
+b_i^{(in)}=0,\qquad
+w_{ik}^{(in)}\sim\mathcal N\left(0,\frac1{\dim(\vec x)}\right).
+\]
+El segundo argumento de \(\mathcal N\) es la varianza. No imponer durante el aprendizaje que la suma de confianzas siga siendo uno. Para cada componente ideal:
+\[
+b_{i,\mathrm{ej}}^{(tr)}\sim\mathcal N(\mu_{\mathrm{ej}},\sigma_{\mathrm{ej}}^2),
+\qquad
+I_{i,\mathrm{ej}}^{(tr)}\sim\mathcal N(0,\sigma_{\mathrm{ej}}^2).
+\]
+Las estadísticas corresponden al espacio de salida utilizado por el modelo; al estandarizar, son cero y uno para componentes no constantes. La inicialización del ancho de banda se realiza después de inicializar el resto (sección 24). Semilla y valores de hiperparámetros aún sin fijar.
+
+### 23.3. Percepción e intercambio inmanente
+
+\[
+V_i^{(0)}=b_i^{(in)}+\sum_{k=1}^{\dim(\vec x)}w_{ik}^{(in)}x_k.
+\]
+Excitar únicamente en \(\tau=0\). No hay excitación continuada. Potencial entre neuronas e intercambio:
+\[
+\Delta V_{ij}^{(\tau)}=V_i^{(\tau)}-V_j^{(\tau)},\qquad
+J_{i\to j}^{(\tau)}=c_{ij}\Delta V_{ij}^{(\tau)}=-J_{j\to i}^{(\tau)}.
+\]
+\[
+V_i^{(\tau+1)}
+=V_i^{(\tau)}+\eta\sum_{j\in\mathcal N(i)}J_{j\to i}^{(\tau)}.
+\]
+\(\eta>0\) es hiperparámetro fijo, no entrenable. Si no tiene vecinas, el potencial no cambia. Actualizaciones sincrónicas, leyendo estados del ciclo anterior, para no depender del orden de recorrido.
+
+### 23.4. Manifestación transcendente
+
+\[
+\vec q_i^{(0)}=\vec b_i^{(tr)}+\vec I_i^{(tr)}V_i^{(0)},
+\]
+\[
+\boxed{
+\vec q_i^{(\tau+1)}=
+\vec b_i^{(tr)}+\vec I_i^{(tr)}V_i^{(\tau+1)}
++\frac{\sum_{j\in\mathcal N(i)}c_{ij}\vec q_j^{(\tau)}}
+{1+\sum_{j\in\mathcal N(i)}c_{ij}}
+}.
+\]
+Los vectores \(\vec q_i,\vec b_i^{(tr)},\vec I_i^{(tr)}\) tienen dimensión \(\dim(\vec\xi)\). Parámetros compartidos entre ciclos. La comunicación transcendente usa las mismas confianzas, con retraso de un ciclo; no hay retroalimentación directa de \(\vec q\) hacia \(V\). Ejecutar un número fijo y finito de ciclos \(\tau_{\max}\). No calcular el modo KDE en cada ciclo ni introducir parada por fenómeno.
+
+### 23.5. Diagnósticos y limitaciones
+
+\[
+\mathring V^{(\tau)}=\frac1N\sum_iV_i^{(\tau)},\quad
+\sigma_V^{2(\tau)}=\frac1N\sum_i(V_i^{(\tau)}-\mathring V^{(\tau)})^2,
+\]
+\[
+\mathring{\vec q}^{(\tau)}=\frac1N\sum_i\vec q_i^{(\tau)},\quad
+\sigma_q^{2(\tau)}=\frac1N\sum_i\|\vec q_i^{(\tau)}-\mathring{\vec q}^{(\tau)}\|^2.
+\]
+Nombres vigentes: dispersión inmanente y dispersión cognifenomenológica. No forman parte del forward ni de la pérdida neuronal. Con topología y parámetros fijos, las posiciones individuales son funciones afines de la entrada; el lector de modos puede ser no lineal, pero no resuelve por sí solo la limitación de capacidad individual. Observar experimentalmente antes de ampliar la arquitectura. La difusión simétrica conserva la media inmanente con topología fija.
+
+## 24. KDE, lectura y aprendizaje diferenciado del ancho de banda
+
+### 24.1. KDE normalizada y pérdida neuronal
+
+En lo sucesivo \(\vec q_i\) sin índice de ciclo significa \(\vec q_i^{(\tau_{\max})}\).
+\[
+\rho(\vec z\mid x)=
+\frac{1}{N(2\pi h^2)^{\dim(\vec\xi)/2}}
+\sum_{i\in\mathcal A}\exp\left(-\frac{\|\vec z-\vec q_i\|^2}{2h^2}\right).
+\]
+Kernel gaussiano isotrópico, igual peso para cada neurona activa, ancho escalar positivo compartido entre neuronas y fenómenos. No usar lectores ponderados históricos.
+\[
+\boxed{\mathcal L(x)=-\log\rho(\vec\xi(x)\mid x).}
+\]
+Actualizar parámetros neuronales y confianzas usando esta pérdida y manteniendo \(h\) constante durante su diferenciación. La NLL de una densidad continua puede ser negativa. No retropropagar a través del cognifenómeno leído, Mean Shift ni argmax.
+
+**Decisión explícita:** evaluación directa de KDE, sin LogSumExp. Monitorizar subdesbordamiento, suma nula, logaritmo de cero y resultados no finitos; no sustituir por LogSumExp sin nueva autorización. La precisión double no elimina el riesgo.
+
+### 24.2. Error colectivo y pérdida específica de h
+
+\[
+\varepsilon_{\mathrm{ind}}(x)=\frac1N\sum_i\|\vec q_i-\vec\xi(x)\|^2.
+\]
+\[
+\boxed{\mathcal L_h(x)=\dim(\vec\xi)\log h+
+\frac{\varepsilon_{\mathrm{ind}}(x)}{2h^2}.}
+\]
+Es la media de NLL gaussianas individuales salvo constante independiente de \(h\). Actualizar \(h\) exclusivamente mediante \(\mathcal L_h\), manteniendo las posiciones neuronales constantes en esa derivación. No transmitir su gradiente a los parámetros neuronales. Así el ancho depende del acierto colectivo y no solo de las neuronas más próximas al ideal.
+
+\[
+\omega_h=\log h,\qquad h=\exp(\omega_h),\qquad
+\frac{\partial\mathcal L_h}{\partial\omega_h}
+=\dim(\vec\xi)-\frac{\varepsilon_{\mathrm{ind}}(x)}{h^2}.
+\]
+Inicializar tras un forward completo del conjunto de entrenamiento con los parámetros iniciales y sin backward:
+\[
+h_{\mathrm{init}}=
+\sqrt{
+\frac{\sum_{x\in\mathcal D_{\mathrm{train}}}\sum_i
+\|\vec q_i^{(\tau_{\max})}(x)-\vec\xi(x)\|^2}
+{N_0|\mathcal D_{\mathrm{train}}|\dim(\vec\xi)}
+},
+\qquad
+\omega_{h,\mathrm{init}}=\log h_{\mathrm{init}}.
+\]
+No localizar modos para inicializar. Si las posiciones se mantienen fijas y el error medio es positivo, el óptimo de la pérdida de ancho es la raíz cuadrada del error individual medio dividido por la dimensión. No se impone suelo conceptual a \(h\), ni penalización adicional. Protección exclusivamente numérica aprobada; falta concretar su magnitud/procedimiento y el caso degenerado de error inicial exactamente cero.
+
+### 24.3. Lectura final: Mean Shift y argmax
+
+Para el fenómeno considerado, inicializar una búsqueda por cada posición final \(\vec z_i^{(0)}=\vec q_i\). El índice \(k\) siguiente corresponde a iteraciones del lector, no a ciclos rizomáticos:
+\[
+\vec z^{(k+1)}
+=
+\frac{\sum_i\vec q_i\exp(-\|\vec z^{(k)}-\vec q_i\|^2/(2h^2))}
+{\sum_i\exp(-\|\vec z^{(k)}-\vec q_i\|^2/(2h^2))}.
+\]
+Reunir los puntos de convergencia candidatos en \(\mathcal M\), eliminando duplicados para la búsqueda:
+\[
+\boxed{\widehat{\vec\xi}(x)=
+\operatorname*{argmax}_{\vec z\in\mathcal M}\rho(\vec z\mid x).}
+\]
+Selección del mayor valor encontrado, no certificación del máximo global en todo el espacio. El argmax no es un algoritmo de búsqueda ni es diferenciable en general. La hessiana no es obligatoria; su uso se mencionó como verificación opcional, no como requisito aprobado. Definir tolerancia de convergencia, duplicados, máximo de iteraciones y empates al implementar. No utilizar etiquetas ideales para la lectura en inferencia. El lector no es necesario para obtener los gradientes ni para calcular el error de control del entrenamiento.
+
+## 25. Backward analítico a través de todos los ciclos
+
+Para un ejemplo, definir abreviaturas auxiliares (no nuevos parámetros ni estados neuronales):
+\[
+p_i(x)=\frac{\exp(-\|\vec q_i-\vec\xi\|^2/(2h^2))}
+{\sum_j\exp(-\|\vec q_j-\vec\xi\|^2/(2h^2))},
+\quad
+d_i=1+\sum_{j\in\mathcal N(i)}c_{ij},
+\quad
+\vec R_i^{(\tau)}=\frac{\sum_j c_{ij}\vec q_j^{(\tau)}}{d_i},
+\]
+donde la suma de \(\vec R_i\) es sobre vecinas activas. Los adjuntos \(\vec g_{q,i}^{(\tau)}=\partial\mathcal L/\partial\vec q_i^{(\tau)}\) y \(g_{V,i}^{(\tau)}=\partial\mathcal L/\partial V_i^{(\tau)}\) son gradientes totales de la pérdida respecto a los estados correspondientes.
+
+### 25.1. Condiciones finales y recurrencia hacia atrás
+
+\[
+\vec g_{q,i}^{(\tau_{\max})}
+=p_i(x)\frac{\vec q_i-\vec\xi}{h^2},\qquad
+g_{V,i}^{(\tau_{\max})}=\vec I_i^{(tr)}\cdot\vec g_{q,i}^{(\tau_{\max})}.
+\]
+Para \(\tau=\tau_{\max}-1,\ldots,0\):
+\[
+\vec g_{q,i}^{(\tau)}=\sum_{j\in\mathcal N(i)}
+\frac{c_{ij}}{d_j}\vec g_{q,j}^{(\tau+1)},
+\]
+\[
+g_{V,i}^{(\tau)}
+=\vec I_i^{(tr)}\cdot\vec g_{q,i}^{(\tau)}
++\left(1-\eta\sum_{j\in\mathcal N(i)}c_{ij}\right)g_{V,i}^{(\tau+1)}
++\eta\sum_{j\in\mathcal N(i)}c_{ij}g_{V,j}^{(\tau+1)}.
+\]
+Acumular todos los usos de cada parámetro compartido en el tiempo:
+\[
+\frac{\partial\mathcal L}{\partial\vec b_i^{(tr)}}=
+\sum_{\tau=0}^{\tau_{\max}}\vec g_{q,i}^{(\tau)},
+\qquad
+\frac{\partial\mathcal L}{\partial\vec I_i^{(tr)}}=
+\sum_{\tau=0}^{\tau_{\max}}V_i^{(\tau)}\vec g_{q,i}^{(\tau)},
+\]
+\[
+\frac{\partial\mathcal L}{\partial w_{ik}^{(in)}}=
+g_{V,i}^{(0)}x_k,\qquad
+\frac{\partial\mathcal L}{\partial b_i^{(in)}}=g_{V,i}^{(0)}.
+\]
+
+### 25.2. Gradiente de una confianza compartida activa
+
+\[
+\boxed{
+\begin{aligned}
+\frac{\partial\mathcal L}{\partial c_{ij}}
+=\sum_{\tau=0}^{\tau_{\max}-1}\Bigg[
+&\eta\Delta V_{ij}^{(\tau)}
+(g_{V,j}^{(\tau+1)}-g_{V,i}^{(\tau+1)})\\
+&+\frac{\vec g_{q,i}^{(\tau+1)}\cdot
+(\vec q_j^{(\tau)}-\vec R_i^{(\tau)})}{d_i}\\
+&+\frac{\vec g_{q,j}^{(\tau+1)}\cdot
+(\vec q_i^{(\tau)}-\vec R_j^{(\tau)})}{d_j}
+\Bigg].
+\end{aligned}}
+\]
+Una sola derivada y una sola actualización por arista no ordenada. Las dos contribuciones inmanentes y las dos transcendentes están incluidas; no duplicar indirectamente la contribución de \(V\) ya incluida en su adjunto. Las neuronas o conexiones excluidas no reciben gradiente ordinario. No implementar gradientes laterales ahora. Verificar estos gradientes manuales mediante diferencias finitas en puntos de topología fija y fuera de fronteras no diferenciables antes de entrenar.
+
+## 26. Adam, minilotes y Group Lasso
+
+### 26.1. Optimización ordinaria
+
+Decisión expresa: Adam sobre CPU, minilotes de tamaño configurable. Promediar gradientes del minilote \(\mathcal B\):
+\[
+g_\theta=\frac1{|\mathcal B|}\sum_{x\in\mathcal B}
+\frac{\partial\mathcal L(x)}{\partial\theta},
+\quad
+g_{\omega_h}=\frac1{|\mathcal B|}\sum_{x\in\mathcal B}
+\left(\dim(\vec\xi)-\frac{\varepsilon_{\mathrm{ind}}(x)}{h^2}\right).
+\]
+Usar los estados del mismo forward para ambos gradientes antes de modificar parámetros. Mantener momentos por parámetro, incluida \(\omega_h\); no regularizar el ancho. Para cada actualización de Adam, con índice \(s\):
+\[
+m_k=\beta_1m_k^{\mathrm{ant}}+(1-\beta_1)g_k,\qquad
+v_k=\beta_2v_k^{\mathrm{ant}}+(1-\beta_2)g_k^2,
+\]
+\[
+\widehat m_k=m_k/(1-\beta_1^s),\qquad
+\widehat v_k=v_k/(1-\beta_2^s),\qquad
+D_k=\sqrt{\widehat v_k}+\epsilon_{\mathrm{Adam}},
+\]
+\[
+\boxed{\theta_k^*=\theta_k-lr\,\widehat m_k/D_k.}
+\]
+Los momentos se inicializan en cero. \(lr\) es la nomenclatura aprobada para tasa de aprendizaje (no \(\alpha\)). No se han fijado valores numéricos de Adam ni tamaño del minilote. El esquema de orden de minilotes y paralelización CPU no está decidido; no introducir mecanismos estocásticos nuevos sin aprobación.
+
+### 26.2. Grupo neuronal completo y activación selectiva
+
+\[
+G_i=\|\vec\theta_i\|_2=
+\sqrt{(b_i^{(in)})^2+\|\vec w_i^{(in)}\|^2
++\|\vec b_i^{(tr)}\|^2+\|\vec I_i^{(tr)}\|^2
++\sum_{j\ne i}c_{ij}^2}.
+\]
+Incluye parámetros propios y las confianzas incidentes; las inactivas se mantienen en cero. Grupos naturalmente solapados, **sin factor de compensación 1/2**: una arista es compartida, no dos parámetros. Regularizar una sola neurona candidata a la vez en el prototipo. Cuando se activa:
+\[
+\mathcal L_{\mathrm{reg}}=\mathcal L+\lambda_{\mathrm{GL}}G_i,\qquad
+\lambda_{\mathrm{GL}}>0\ \text{constante}.
+\]
+No sumar el gradiente de la regularización al gradiente ordinario de Adam: aplicar el proximal después del paso ordinario por minilote. No usar regularización L1 adicional ni L0. La intensidad no es adaptativa ni calibrada por neurona. El único desencadenante es estancamiento inválido (sección 27); no activar por redundancia cognifenomenológica, que es un resultado deseado.
+
+### 26.3. Operador proximal adaptado a Adam
+
+El operador radial del descenso por gradiente uniforme fue aceptado como fundamento:
+\[
+\vec\theta_i^{\,\mathrm{nuevo}}
+=\max(0,1-lr\lambda_{\mathrm{GL}}/\|\vec\theta_i^*\|)\vec\theta_i^*
+\]
+(con resultado cero si el grupo ya es cero). No utilizarlo como fórmula definitiva con Adam, pues su métrica es diagonal. La adaptación aprobada resuelve:
+\[
+\operatorname*{argmin}_{\vec u}\left[
+\frac1{2lr}\sum_k D_k(u_k-\theta_{i,k}^*)^2
++\lambda_{\mathrm{GL}}\|\vec u\|_2
+\right].
+\]
+Criterio de anulación exacta:
+\[
+\boxed{\|D\vec\theta_i^*\|_2\le lr\lambda_{\mathrm{GL}}
+\ \Longrightarrow\ \vec\theta_i^{\,\mathrm{nuevo}}=\vec0.}
+\]
+Aquí \(D\) representa la diagonal de los \(D_k\) correspondientes a cada parámetro del grupo. Si no se cumple:
+\[
+\theta_{i,k}^{\,\mathrm{nuevo}}=
+\frac{D_kG_i^{\,\mathrm{nuevo}}}
+{D_kG_i^{\,\mathrm{nuevo}}+lr\lambda_{\mathrm{GL}}}\theta_{i,k}^*,
+\]
+\[
+\sum_k\left(\frac{D_k\theta_{i,k}^*}
+{D_kG_i^{\,\mathrm{nuevo}}+lr\lambda_{\mathrm{GL}}}\right)^2=1,
+\qquad 0<G_i^{\,\mathrm{nuevo}}<\|\vec\theta_i^*\|_2.
+\]
+Resolver la única raíz positiva mediante bisección; tolerancia numérica no fijada. No aplicar dos proximales independientes a aristas compartidas; solo hay un grupo seleccionado. Es solución exacta del subproblema proximal de métrica diagonal, no garantía de convergencia global de Adam. Los momentos de Adam corresponden al gradiente neuronal ordinario.
+
+## 27. Control del entrenamiento: regresión segmentada, TOST y validez
+
+### 27.1. Magnitud de control
+
+Al finalizar cada época, evaluar con parámetros fijos sobre todo el conjunto de entrenamiento, después de las actualizaciones de minilote, sin calcular modos:
+\[
+\varepsilon_{\mathrm{ind}}^{(e)}
+=\frac1{N|\mathcal D_{\mathrm{train}}|}
+\sum_{x\in\mathcal D_{\mathrm{train}}}\sum_{i\in\mathcal A}
+\|\vec q_i(x)-\vec\xi(x)\|^2.
+\]
+No usar NLL KDE para detectar estancamiento ni determinar validez, porque depende de \(h\) y puede favorecer desigualmente a neuronas próximas al ideal. Para cada fenómeno:
+\[
+\varepsilon_{\mathrm{ind}}(x)=\sigma_q^{2(\tau_{\max})}
++\|\mathring{\vec q}^{(\tau_{\max})}-\vec\xi(x)\|^2.
+\]
+El indicador mide conjuntamente dispersión y error del centro. Es media, no garantiza tolerancia individual de cada neurona, componente o fenómeno. El forward de diagnóstico puede requerir un recorrido adicional de entrenamiento.
+
+### 27.2. Segmentación y duración emergente
+
+Comparar una recta con una regresión de dos segmentos independientes:
+\[
+\varepsilon_{\mathrm{ind}}^{(e)}\approx
+\begin{cases}m_1e+b_1&e<e_c,\\m_2e+b_2&e\ge e_c.\end{cases}
+\]
+\[
+e_c=\operatorname*{argmin}_{e_c}(S_1+S_2),\qquad
+\mathrm{BIC}=n\log(S/n)+k\log n.
+\]
+\(S\) es suma de cuadrados residuales, \(n\) observaciones, \(k=2\) para una recta y \(k=5\) para dos rectas contando el punto de cambio (convención operativa aprobada; el parámetro de varianza común se omite en ambos). Seleccionar menor BIC. Si no se justifica segmentación, usar toda la recta única. Si se seleccionan dos segmentos, usar el último para evaluar el régimen actual. En este último caso \(E^+=e_{\mathrm{actual}}-e_c+1\); para una recta, \(E^+\) es la longitud del intervalo analizado. No imponer una duración fija al régimen. Falta concretar mínimo de observaciones, candidatos admisibles y empates, historial exacto que se examina y tratamiento de \(S=0\). Para estimar la varianza residual de cada pendiente hacen falta al menos tres observaciones en ese segmento.
+
+### 27.3. Pendiente, incertidumbre y criterio TOST operativo
+
+Sobre las \(E^+\) épocas del régimen actual:
+\[
+\overline e=\frac1{E^+}\sum_e e,\quad
+\overline{\varepsilon}_{\mathrm{ind}}=\frac1{E^+}\sum_e\varepsilon_{\mathrm{ind}}^{(e)},
+\]
+\[
+m=\frac{\sum_e(e-\overline e)(\varepsilon_{\mathrm{ind}}^{(e)}-\overline{\varepsilon}_{\mathrm{ind}})}
+{\sum_e(e-\overline e)^2},\quad b=\overline{\varepsilon}_{\mathrm{ind}}-m\overline e,
+\]
+\[
+s^2=\frac{\sum_e[\varepsilon_{\mathrm{ind}}^{(e)}-(me+b)]^2}{E^+-2},
+\qquad s_m=\sqrt{\frac{s^2}{\sum_e(e-\overline e)^2}}.
+\]
+Tolerancia relativa con suelo dado por la precisión exigida:
+\[
+m_{\mathrm{tol}}=r_m\max(\overline{\varepsilon}_{\mathrm{ind}},\varepsilon_{\mathrm{tol}}).
+\]
+Estancamiento confirmado según criterio TOST:
+\[
+\boxed{|m|+t_{1-\alpha_{\mathrm{TOST}},E^+-2}s_m<m_{\mathrm{tol}}.}
+\]
+Recuperación significativa del aprendizaje:
+\[
+\boxed{m+t_{1-\alpha_{\mathrm{TOST}},E^+-2}s_m<-m_{\mathrm{tol}}.}
+\]
+Una pendiente no significativa no basta para demostrar equivalencia. Usar TOST como criterio operativo: la selección del segmento a partir de los mismos datos, autocorrelación entre épocas, márgenes dependientes de datos y contrastes repetidos impiden atribuir una tasa de error estadística exacta al procedimiento. No incorporar correcciones estadísticas adicionales ahora.
+
+### 27.4. Validez y elección de candidata
+
+\[
+\begin{cases}
+\overline{\varepsilon}_{\mathrm{ind}}\le\varepsilon_{\mathrm{tol}}&
+\text{estancamiento válido},\\
+\overline{\varepsilon}_{\mathrm{ind}}>\varepsilon_{\mathrm{tol}}&
+\text{estancamiento inválido}.
+\end{cases}
+\]
+Solo clasificar así después de confirmar estancamiento. Usar la nomenclatura **inválido**, no inaceptable. La tolerancia depende de la tarea y es hiperparámetro. Interpretación RMS: \(\delta_{\mathrm{tol}}=\sqrt{\varepsilon_{\mathrm{tol}}}\); si se expresa por componente normalizada, \(\varepsilon_{\mathrm{tol}}=\dim(\vec\xi)\delta_{\mathrm{ej,tol}}^2\). Son parametrizaciones equivalentes, no nuevas exigencias.
+
+Criterio de candidatura aprobado:
+\[
+\overline p_i=\frac1{|\mathcal D_{\mathrm{train}}|}\sum_x p_i(x),
+\qquad i_{\mathrm{GL}}\in\operatorname*{argmin}_{i\in\mathcal A}\overline p_i.
+\]
+La menor participación KDE es solo criterio de candidatura, nunca de hibernación directa: siempre hay un mínimo y el valor equitativo \(1/N\) cambia al reducir el rizoma. Una neurona poco participativa puede ayudar indirectamente a otras. No activar GL únicamente porque exista candidata. El criterio anterior de redundancia por eje se considera obsoleto: congregación no equivale a redundancia funcional. Los empates de candidatura quedan pendientes.
+
+### 27.5. Máquina de control
+
+- Entrenamiento ordinario: si se confirma estancamiento inválido y \(N>1\), seleccionar una candidata y activar GL con intensidad constante.
+- Durante GL: mantenerlo sobre la misma candidata hasta detectar recuperación del aprendizaje o anulación exacta del grupo. No establecer duración máxima propia de GL, por decisión expresa de sencillez. Puede persistir un equilibrio entre aprendizaje y regularización; se conserva el límite global de épocas.
+- Al recuperar aprendizaje, desactivar GL; la neurona no nula sigue activa. Al anular el grupo, hibernar inmediatamente y desactivar GL.
+- Reiniciar el historial de regresión al activar/desactivar GL o hibernar una neurona. No mezclar métricas de poblaciones activas distintas en el mismo régimen. Si hay hibernación durante una época, usar los parámetros y la población finales en el diagnóstico.
+- Al alcanzar estancamiento válido o el máximo global \(E_{\max}\), finalizar entrenamiento. Si \(N=1\), deshabilitar GL y continuar aprendizaje ordinario hasta uno de los criterios de fin. Nunca eliminar la última neurona.
+- La finalización por límite de épocas no implica precisión válida. Registrar por qué se ha detenido el entrenamiento.
+
+## 28. Recorte, hibernación y ablación
+
+- Confianzas: tras actualización por Adam y proximal cuando proceda, imponer \(c_{ij}\leftarrow\max(0,c_{ij})\); una confianza exactamente nula deja de participar en ambos sentidos, se excluye de forward/backward y se anulan sus momentos de Adam. No reactivarla en el prototipo. Conservar simetría y no duplicar parámetros.
+- Entrada: recortar solo si \(w_{ik}^{(in)}=0\) exactamente; no usar umbral de magnitud ni L1. Pesos negativos permanecen válidos. Se acepta que haya escaso recorte espontáneo con Adam.
+- Hibernación neuronal: cuando GL produce grupo exactamente nulo, retirar inmediatamente la neurona y todas sus conexiones del forward, backward, KDE, pérdida de ancho y diagnósticos, actualizando \(N=|\mathcal A|\). No dejar una gaussiana espuria en el origen. Conservar su registro como hibernada durante el entrenamiento y dejar de actualizar sus parámetros/momentos. No hay mecanismo de recuperación implementado en esta fase.
+- Ablación: al finalizar el entrenamiento, las neuronas todavía hibernadas se eliminan definitivamente con sus parámetros y conexiones, sin bypass. La distinción hibernación/ablación es temporal; no realizar ablaciones irreversibles intermedias.
+- No hacer simulacros de ablación o reactivación, aprendizaje auxiliar de hibernadas, ni derivadas laterales en el prototipo. Su posibilidad futura está preservada en el ideario.
+
+## 29. Estabilidad, hiperparámetros y cuestiones de implementación abiertas
+
+### 29.1. Estabilidad aprobada
+
+Monitorizar la condición suficiente:
+\[
+\eta\max_i\sum_{j\in\mathcal N(i)}c_{ij}<1.
+\]
+Si deja de cumplirse, advertir; no limitar las confianzas ni adaptar \(\eta\) automáticamente. Incumplir una condición suficiente no demuestra necesariamente divergencia. Si no hay aristas activas, no hay intercambio. Observar las dispersiones y resultados finitos. Double para cálculos, protección numérica de \(h\), KDE directa expresamente sin LogSumExp. No introducir mecanismos correctivos conceptuales adicionales sin autorización.
+
+### 29.2. Hiperparámetros identificados (valores sin fijar)
+
+| Magnitud | Función |
+|---|---|
+| \(N_0\) | Número inicial de neuronas, mayor que uno. |
+| \(\tau_{\max}\) | Número fijo de ciclos rizomáticos. |
+| \(\eta\) | Tamaño de paso inmanente fijo. |
+| \(lr,\beta_1,\beta_2,\epsilon_{\mathrm{Adam}}\) | Configuración de Adam. |
+| Tamaño de minilote | Fenómenos por actualización. |
+| \(\lambda_{\mathrm{GL}}\) | Intensidad constante de Group Lasso. |
+| \(E^+_{\min}\) | Mínimo de observaciones para evaluar un régimen. |
+| \(\alpha_{\mathrm{TOST}}\) | Nivel de significación de referencia operativo. |
+| \(r_m\) | Variación relativa por época considerada despreciable. |
+| \(\varepsilon_{\mathrm{tol}}\) | Precisión cognifenomenológica exigida. |
+| \(E_{\max}\) | Límite global de épocas. |
+
+\(h\) es parámetro aprendible, no hiperparámetro fijo; \(E^+\) emerge de la segmentación. \(N\) evoluciona por hibernación. No hay duración máxima propia de GL, umbral de poda de entrada ni regularización adicional. Las tolerancias de solvers y protecciones numéricas todavía no tienen valores aprobados.
+
+### 29.3. Detalles no cerrados, a resolver explícitamente al preparar código
+
+- Inicialización degenerada de \(h\), límites representables para \(\exp(\omega_h)\), comportamiento ante densidad cero y divisiones no finitas; no sustituir la evaluación directa de KDE por LogSumExp.
+- Componentes de datos de varianza cero, formato de datos y división de conjuntos; semilla/orden de minilotes, valores concretos de hiperparámetros.
+- Mean Shift: tolerancias, máximo de iteraciones, deduplicación y empates. BIC: caso de residuo cero, mínimo de observaciones y rango de búsqueda; TOST: calendario operativo de reevaluación y empates.
+- Proximal de Adam: tolerancia de bisección. La expresión proximal de la sección 26 se deriva sin restricciones de signo; para confianzas se acordó proyectar a no negativas. Debe distinguirse la fórmula exacta de ese subproblema de la composición con la proyección: un paso proximal conjunto con restricción de no negatividad requeriría usar la parte positiva de las coordenadas de confianza en la resolución. No se ha elegido esta variante ni se modifica aquí el orden aprobado. Aclarar en particular cómo tratar una anulación del grupo que solo aparece tras proyectar y cómo congelar momentos de entradas recortadas.
+- Especificación de pruebas: contrastar backward manual con diferencias finitas, simetría, conservación de media inmanente, caso de neurona única, anulación proximal, normalización de KDE tras hibernación y diagnóstico de inestabilidad. Estos son controles de verificación propuestos, no resultados experimentales ni cambios implementados.
+
+## 30. Ideario y frontera de implementación
+
+Conservar, sin implementar ahora, los mecanismos de las secciones históricas: reactivación lateral de conexiones (prioridad alta, primera opción), reactivación lateral neuronal (alta, posterior a conexiones), aprendizaje auxiliar de hibernadas, experiencia actual/histórica y sus asociaciones, conocimiento, influencia comunicativa, liderazgo y meritocracia, confianzas asimétricas, congregaciones persistentes y pulso, excitación continuada, tamaño de paso inmanente adaptativo, simulacros como alternativa futura y lector histórico. No introducir ANN individuales ni mecanismos adicionales para corregir por anticipado las limitaciones observadas.
+
+**Siguiente paso:** preparar implementación C++ en CPU del núcleo anterior y contrastarlo experimentalmente, empezando por forward y backward verificados antes de evaluar la reorganización por Group Lasso. Revisar primero los detalles operativos pendientes de la sección 29.3 sin tratarlos como decisiones ya aprobadas. Este checkpoint modifica documentación, no código.
