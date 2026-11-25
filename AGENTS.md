@@ -10,11 +10,11 @@ Referencia de estilo: [satellite_CNN_5HL.cpp](https://github.com/meirame/cnn-sat
 
 ## 2. Filosofía de implementación
 
-- C++ desde cero, inicialmente sobre CPU. Escribir explícitamente las operaciones matemáticas, el forward, el backward y Adam. No sustituirlos por frameworks de aprendizaje automático, autodiferenciación ni bibliotecas que oculten el núcleo matemático.
+- C++ desde cero, inicialmente sobre CPU. Escribir explícitamente las operaciones matemáticas, el forward, el backward y el descenso de gradiente clásico. Una actualización por época, tras promediar los gradientes del conjunto completo de entrenamiento. Adam y minilotes quedan en el ideario con prioridad baja; no implementarlos en el prototipo. No sustituirlos por frameworks de aprendizaje automático, autodiferenciación ni bibliotecas que oculten el núcleo matemático.
 - Priorizar la biblioteca estándar, `std::vector`, bucles `for`, acumuladores y operaciones elementales. Utilizar vectores anidados cuando reflejen bien las dimensiones; evitar punteros, plantillas, macros y capas de abstracción innecesarias.
 - La correspondencia entre ecuación y código debe ser reconocible a simple vista. Favorecer un bucle explícito y comprensible frente a una expresión compacta pero opaca.
 - Separar claramente cálculo de estados, cálculo de gradientes y actualización de parámetros. Completar el backward antes de modificar los parámetros de los que depende.
-- Utilizar `const` y referencias para datos de solo lectura y referencias mutables para resultados que deban escribirse. Inicializar explícitamente acumuladores, gradientes y momentos.
+- Utilizar `const` y referencias para datos de solo lectura y referencias mutables para resultados que deban escribirse. Inicializar explícitamente acumuladores y gradientes.
 - No crear arquitecturas de software industriales, jerarquías de clases, patrones de diseño, dependencias o refactorizaciones generales por iniciativa propia. La simplicidad no impide separar responsabilidades cuando sea necesario.
 - Mantener el código general respecto a las dimensiones del problema, sin imponer tamaños ni propiedades de la CNN de referencia a DRANN.
 
@@ -26,9 +26,9 @@ La CNN de referencia agrupa responsabilidades en `struct modelSaving`, `struct u
 - Sangría de cuatro espacios. Llaves de estructuras, funciones y bloques extensos en línea independiente. Se admiten operaciones o bloques triviales en una línea, como en el código original.
 - Separar generosamente funciones y bloques conceptuales con líneas en blanco. Mantener las firmas largas en varias líneas, agrupando argumentos relacionados.
 - Usar encabezados de sección y subsección al estilo original: `//===UTILIDADES===`, `//===NEURAL FUNCTIONS===`, `//===PARAMETER UPDATE FUNCTIONS===`, `/*============Forward============*/`, `/*============Backward============*/`, `/*============Loss calculation============*/`.
-- Nombres de funciones y variables descriptivos, normalmente en inglés y camelCase (por ejemplo, `initWeights`, `progressBar`, `train`, `validationProcedure`, `saveModelTxt`). Respetar la notación matemática cuando sea más expresiva: `V`, `q`, `c`, `eta`, `h`, `omega_h`, `lr`, `tau`, `i`, `j`; sufijos `Cache` para estados guardados y prefijos de gradiente/momentos como `dV`, `dQ`, `mW`, `vW`.
+- Nombres de funciones y variables descriptivos, normalmente en inglés y camelCase (por ejemplo, `initWeights`, `progressBar`, `train`, `validationProcedure`, `saveModelTxt`). Respetar la notación matemática cuando sea más expresiva: `V`, `q`, `c`, `eta`, `h`, `omega_h`, `lr`, `tau`, `i`, `j`; sufijos `Cache` para estados guardados y prefijos de gradiente como `dV`, `dQ`.
 - Comentarios en español o inglés, naturales y útiles: explicar por qué se hace una operación, índices, dimensiones, convenciones matemáticas o advertencias. No llenar el código de comentarios redundantes, docstrings artificiales o documentación generada innecesaria.
-- Mantener visibles las declaraciones de parámetros, momentos y cachés; usar constructores e inicializaciones comprensibles y agrupadas por significado. Evitar fragmentar el proyecto en multitud de archivos pequeños sin justificación.
+- Mantener visibles las declaraciones de parámetros, gradientes y cachés; usar constructores e inicializaciones comprensibles y agrupadas por significado. Evitar fragmentar el proyecto en multitud de archivos pequeños sin justificación.
 - Hiperparámetros fácilmente localizables y modificables; configuración explícita y accesible. No esconder decisiones en constantes mágicas ni copiar valores de la CNN como si estuvieran aprobados para DRANN.
 
 Ejemplo exclusivamente estilístico (no establece nuevas decisiones de arquitectura):
@@ -56,7 +56,7 @@ Cuando la tarea incluya estas funcionalidades, mantener la filosofía de la CNN:
 - Barras de progreso sencillas con `#` y `.`, porcentaje, tiempo restante y duración de procesos mediante `std::chrono`; evitar saturar la terminal.
 - Comprobar dimensiones, apertura y lectura de archivos, valores inválidos y coherencia de estados antes de operar. No ocultar errores ni continuar con datos corruptos.
 - Preferir persistencia inspeccionable en texto, mediante `std::ifstream` y `std::ofstream`, cabeceras o firmas de formato, dimensiones explícitas y `std::locale::classic()`. Mantener precisión suficiente para recuperar un `double` (p. ej., `max_digits10`), no copiar el redondeo de la CNN.
-- Si se implementan checkpoints o recuperación, guardar los parámetros, estados del optimizador y demás información necesaria para reanudar coherentemente. Distinguir una pausa recuperable de la finalización definitiva y de la ablación. Validar la carga antes de sustituir el estado actual.
+- Si se implementan checkpoints o recuperación, guardar los parámetros y demás información necesaria para reanudar coherentemente. Distinguir una pausa recuperable de la finalización definitiva y de la ablación. Validar la carga antes de sustituir el estado actual.
 - Mantener resultados experimentales accesibles en archivos de texto tabulares y registros de configuración, si corresponde. No denominar `.ods` a un archivo de texto delimitado.
 - Los detalles concretos de interfaz, formato de persistencia y recuperación todavía deben ajustarse a las decisiones aprobadas para DRANN. La referencia de la CNN no autoriza automáticamente nuevas funciones.
 
