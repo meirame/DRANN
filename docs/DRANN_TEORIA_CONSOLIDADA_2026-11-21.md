@@ -644,7 +644,7 @@ Mantener \(h\) fijo al evaluar el gradiente de la pérdida neuronal \(\mathcal L
 
 - Fenómeno \(\vec x\), ejemplo ideal vectorial \(\vec\xi(x)\), dimensión cognifenomenológica \(\dim(\vec\xi)\). Índice de ciclo rizomático \(\tau\), de época \(e\), de neurona \(i,j\), de componente ideal \(\mathrm{ej}\).
 - \(\mathcal D_{\mathrm{train}}\) es el conjunto de entrenamiento. Estandarizar por componente las entradas y salidas mediante \(z'=(z-\mu)/\sigma\), con estadísticas calculadas exclusivamente en entrenamiento; reutilizar las mismas en validación e inferencia. Las ecuaciones siguientes se entienden en el espacio estandarizado. Invertir la transformación de salida para expresar el cognifenómeno en unidades originales. Tratamiento de desviaciones exactamente nulas pendiente de concretar.
-- Cálculos en double (64 bits). CPU, Adam y minilotes. No ANN internas en cada neurona.
+- Cálculos en double (64 bits). CPU y descenso de gradiente clásico sobre todo el entrenamiento, sin Adam ni minilotes. No ANN internas en cada neurona.
 - \(\mathcal A\) denota el conjunto activo y \(N=|\mathcal A|\) su tamaño. Inicialmente \(N=N_0>1\); se permite acabar con \(N=1\). Las sumas neuronales siguientes se restringen a activas salvo indicación contraria.
 - Confianzas internas simétricas, un solo parámetro por par no ordenado: \(c_{ij}=c_{ji}\). Sin autoconexiones. \(\mathcal N(i)\) son las vecinas activas con confianza positiva. Los pesos de entrada son distintos de las confianzas y pueden ser negativos.
 
@@ -833,32 +833,25 @@ g_{V,i}^{(0)}x_k,\qquad
 \]
 Una sola derivada y una sola actualización por arista no ordenada. Las dos contribuciones inmanentes y las dos transcendentes están incluidas; no duplicar indirectamente la contribución de \(V\) ya incluida en su adjunto. Las neuronas o conexiones excluidas no reciben gradiente ordinario. No implementar gradientes laterales ahora. Verificar estos gradientes manuales mediante diferencias finitas en puntos de topología fija y fuera de fronteras no diferenciables antes de entrenar.
 
-## 26. Adam, minilotes y Group Lasso
+## 26. Descenso de gradiente clásico y Group Lasso
+
+**Revisión expresa del autor, 25-11-2026:** retirar Adam y los minilotes del prototipo. Ambos quedan en el ideario con prioridad baja (§30). Esta revisión sustituye la optimización anterior; no modifica las ecuaciones del forward ni del backward analítico (§§23–25).
 
 ### 26.1. Optimización ordinaria
 
-Decisión expresa: Adam sobre CPU, minilotes de tamaño configurable. Promediar gradientes del minilote \(\mathcal B\):
+Descenso de gradiente clásico sobre el conjunto completo de entrenamiento. Una única actualización por época, después de acumular y promediar los gradientes de todos los ejemplos con parámetros y topología congelados:
 \[
-g_\theta=\frac1{|\mathcal B|}\sum_{x\in\mathcal B}
+g_\theta=\frac1{|\mathcal D_{\rm train}|}\sum_{x\in\mathcal D_{\rm train}}
 \frac{\partial\mathcal L(x)}{\partial\theta},
-\quad
-g_{\omega_h}=\frac1{|\mathcal B|}\sum_{x\in\mathcal B}
+\qquad
+g_{\omega_h}=\frac1{|\mathcal D_{\rm train}|}\sum_{x\in\mathcal D_{\rm train}}
 \left(\dim(\vec\xi)-\frac{\varepsilon_{\mathrm{ind}}(x)}{h^2}\right).
 \]
-Usar los estados del mismo forward para ambos gradientes antes de modificar parámetros. Mantener momentos por parámetro, incluida \(\omega_h\); no regularizar el ancho. Para cada actualización de Adam, con índice \(s\):
 \[
-m_k=\beta_1m_k^{\mathrm{ant}}+(1-\beta_1)g_k,\qquad
-v_k=\beta_2v_k^{\mathrm{ant}}+(1-\beta_2)g_k^2,
+\boxed{\theta^*=\theta-lr\,g_\theta,\qquad
+\omega_h^{\,\mathrm{nuevo}}=\omega_h-lr\,g_{\omega_h}.}
 \]
-\[
-\widehat m_k=m_k/(1-\beta_1^s),\qquad
-\widehat v_k=v_k/(1-\beta_2^s),\qquad
-D_k=\sqrt{\widehat v_k}+\epsilon_{\mathrm{Adam}},
-\]
-\[
-\boxed{\theta_k^*=\theta_k-lr\,\widehat m_k/D_k.}
-\]
-Los momentos se inicializan en cero. \(lr\) es la nomenclatura aprobada para tasa de aprendizaje (no \(\alpha\)). No se han fijado valores numéricos de Adam ni tamaño del minilote. El esquema de orden de minilotes y paralelización CPU no está decidido; no introducir mecanismos estocásticos nuevos sin aprobación.
+Usar los estados del mismo forward para ambos gradientes antes de modificar parámetros. Se conserva la separación de pérdidas y \(h=\exp(\omega_h)\); no regularizar el ancho. No utilizar momentos, corrección de sesgo, precondicionamiento, momentum ni actualizaciones por ejemplo. Se pueden recorrer los ejemplos secuencialmente y reutilizar las cachés; no se requiere guardar todos los forward a la vez. La tasa \(lr\) del entrenamiento ordinario sigue pendiente de fijar para este optimizador. Los ensayos con tasas separadas y dependientes de \(h\) son experimentales, no leyes aprobadas para el entrenamiento ordinario.
 
 ### 26.2. Grupo neuronal completo y activación selectiva
 
@@ -873,45 +866,22 @@ Incluye parámetros propios y las confianzas incidentes; las inactivas se mantie
 \mathcal L_{\mathrm{reg}}=\mathcal L+\lambda_{\mathrm{GL}}G_i,\qquad
 \lambda_{\mathrm{GL}}>0\ \text{constante}.
 \]
-No sumar el gradiente de la regularización al gradiente ordinario de Adam: aplicar el proximal después del paso ordinario por minilote. No usar regularización L1 adicional ni L0. La intensidad no es adaptativa ni calibrada por neurona. El único desencadenante es estancamiento inválido (sección 27); no activar por redundancia cognifenomenológica, que es un resultado deseado.
+No sumar el gradiente de la regularización al gradiente ordinario: aplicar el proximal después del único paso de descenso de gradiente de la época, cuando GL esté activo. No usar regularización L1 adicional ni L0. La intensidad no es adaptativa ni calibrada por neurona. El único desencadenante es estancamiento inválido (sección 27); no activar por redundancia cognifenomenológica, que es un resultado deseado.
 
-### 26.3. Operador proximal adaptado a Adam
+### 26.3. Operador proximal uniforme de Group Lasso
 
-El operador radial del descenso por gradiente uniforme fue aceptado como fundamento:
+Al abandonar Adam se recupera el operador radial de métrica euclídea previamente aceptado:
 \[
 \vec\theta_i^{\,\mathrm{nuevo}}
-=\max(0,1-lr\lambda_{\mathrm{GL}}/\|\vec\theta_i^*\|)\vec\theta_i^*
+=\max(0,1-lr\lambda_{\mathrm{GL}}/\|\vec\theta_i^*\|_2)\vec\theta_i^*.
 \]
-(con resultado cero si el grupo ya es cero). No utilizarlo como fórmula definitiva con Adam, pues su métrica es diagonal. La adaptación aprobada resuelve:
-\[
-\operatorname*{argmin}_{\vec u}\left[
-\frac1{2lr}\sum_k D_k(u_k-\theta_{i,k}^*)^2
-+\lambda_{\mathrm{GL}}\|\vec u\|_2
-\right].
-\]
-Criterio de anulación exacta:
-\[
-\boxed{\|D\vec\theta_i^*\|_2\le lr\lambda_{\mathrm{GL}}
-\ \Longrightarrow\ \vec\theta_i^{\,\mathrm{nuevo}}=\vec0.}
-\]
-Aquí \(D\) representa la diagonal de los \(D_k\) correspondientes a cada parámetro del grupo. Si no se cumple:
-\[
-\theta_{i,k}^{\,\mathrm{nuevo}}=
-\frac{D_kG_i^{\,\mathrm{nuevo}}}
-{D_kG_i^{\,\mathrm{nuevo}}+lr\lambda_{\mathrm{GL}}}\theta_{i,k}^*,
-\]
-\[
-\sum_k\left(\frac{D_k\theta_{i,k}^*}
-{D_kG_i^{\,\mathrm{nuevo}}+lr\lambda_{\mathrm{GL}}}\right)^2=1,
-\qquad 0<G_i^{\,\mathrm{nuevo}}<\|\vec\theta_i^*\|_2.
-\]
-Resolver la única raíz positiva mediante bisección; tolerancia numérica no fijada. No aplicar dos proximales independientes a aristas compartidas; solo hay un grupo seleccionado. Es solución exacta del subproblema proximal de métrica diagonal, no garantía de convergencia global de Adam. Los momentos de Adam corresponden al gradiente neuronal ordinario.
+Si \(\|\vec\theta_i^*\|_2\le lr\lambda_{\mathrm{GL}}\), incluido el grupo ya nulo, el resultado es exactamente cero. Solo se aplica al grupo seleccionado y una vez por época, después del descenso de gradiente ordinario. Una arista compartida se actualiza una sola vez. Se mantiene el orden descenso de gradiente → proximal → proyección/recorte. No se necesita resolver una raíz por bisección. La anulación que aparezca únicamente después de la proyección sigue siendo una cuestión a aclarar (§29.3).
 
 ## 27. Control del entrenamiento: regresión segmentada, TOST y validez
 
 ### 27.1. Magnitud de control
 
-Al finalizar cada época, evaluar con parámetros fijos sobre todo el conjunto de entrenamiento, después de las actualizaciones de minilote, sin calcular modos:
+Al finalizar cada época, evaluar con parámetros fijos sobre todo el conjunto de entrenamiento, después de la actualización de la época, sin calcular modos:
 \[
 \varepsilon_{\mathrm{ind}}^{(e)}
 =\frac1{N|\mathcal D_{\mathrm{train}}|}
@@ -997,9 +967,9 @@ La menor participación KDE es solo criterio de candidatura, nunca de hibernaci�
 
 ## 28. Recorte, hibernación y ablación
 
-- Confianzas: tras actualización por Adam y proximal cuando proceda, imponer \(c_{ij}\leftarrow\max(0,c_{ij})\); una confianza exactamente nula deja de participar en ambos sentidos, se excluye de forward/backward y se anulan sus momentos de Adam. No reactivarla en el prototipo. Conservar simetría y no duplicar parámetros.
-- Entrada: recortar solo si \(w_{ik}^{(in)}=0\) exactamente; no usar umbral de magnitud ni L1. Pesos negativos permanecen válidos. Se acepta que haya escaso recorte espontáneo con Adam.
-- Hibernación neuronal: cuando GL produce grupo exactamente nulo, retirar inmediatamente la neurona y todas sus conexiones del forward, backward, KDE, pérdida de ancho y diagnósticos, actualizando \(N=|\mathcal A|\). No dejar una gaussiana espuria en el origen. Conservar su registro como hibernada durante el entrenamiento y dejar de actualizar sus parámetros/momentos. No hay mecanismo de recuperación implementado en esta fase.
+- Confianzas: tras descenso de gradiente y proximal cuando proceda, imponer \(c_{ij}\leftarrow\max(0,c_{ij})\); una confianza exactamente nula deja de participar en ambos sentidos, se excluye de forward/backward. No reactivarla en el prototipo. Conservar simetría y no duplicar parámetros.
+- Entrada: recortar solo si \(w_{ik}^{(in)}=0\) exactamente; no usar umbral de magnitud ni L1. Pesos negativos permanecen válidos. Se acepta que haya escaso recorte espontáneo con descenso de gradiente.
+- Hibernación neuronal: cuando GL produce grupo exactamente nulo, retirar inmediatamente la neurona y todas sus conexiones del forward, backward, KDE, pérdida de ancho y diagnósticos, actualizando \(N=|\mathcal A|\). No dejar una gaussiana espuria en el origen. Conservar su registro como hibernada durante el entrenamiento y dejar de actualizar sus parámetros. No hay mecanismo de recuperación implementado en esta fase.
 - Ablación: al finalizar el entrenamiento, las neuronas todavía hibernadas se eliminan definitivamente con sus parámetros y conexiones, sin bypass. La distinción hibernación/ablación es temporal; no realizar ablaciones irreversibles intermedias.
 - No hacer simulacros de ablación o reactivación, aprendizaje auxiliar de hibernadas, ni derivadas laterales en el prototipo. Su posibilidad futura está preservada en el ideario.
 
@@ -1020,8 +990,7 @@ Si deja de cumplirse, advertir; no limitar las confianzas ni adaptar \(\eta\) au
 | \(N_0\) | Número inicial de neuronas, mayor que uno. |
 | \(\tau_{\max}\) | Número fijo de ciclos rizomáticos. |
 | \(\eta\) | Tamaño de paso inmanente fijo. |
-| \(lr,\beta_1,\beta_2,\epsilon_{\mathrm{Adam}}\) | Configuración de Adam. |
-| Tamaño de minilote | Fenómenos por actualización. |
+| \(lr\) | Tasa de aprendizaje del descenso de gradiente. |
 | \(\lambda_{\mathrm{GL}}\) | Intensidad constante de Group Lasso. |
 | \(E^+_{\min}\) | Mínimo de observaciones para evaluar un régimen. |
 | \(\alpha_{\mathrm{TOST}}\) | Nivel de significación de referencia operativo. |
@@ -1034,14 +1003,21 @@ Si deja de cumplirse, advertir; no limitar las confianzas ni adaptar \(\eta\) au
 ### 29.3. Detalles no cerrados, a resolver explícitamente al preparar código
 
 - Inicialización degenerada de \(h\), límites representables para \(\exp(\omega_h)\), comportamiento ante densidad cero y divisiones no finitas; no sustituir la evaluación directa de KDE por LogSumExp.
-- Componentes de datos de varianza cero, formato de datos y división de conjuntos; semilla/orden de minilotes, valores concretos de hiperparámetros.
+- Componentes de datos de varianza cero, formato de datos y división de conjuntos; semilla, valores concretos de hiperparámetros.
 - Mean Shift: tolerancias, máximo de iteraciones, deduplicación y empates. BIC: caso de residuo cero, mínimo de observaciones y rango de búsqueda; TOST: calendario operativo de reevaluación y empates.
-- Proximal de Adam: tolerancia de bisección. La expresión proximal de la sección 26 se deriva sin restricciones de signo; para confianzas se acordó proyectar a no negativas. Debe distinguirse la fórmula exacta de ese subproblema de la composición con la proyección: un paso proximal conjunto con restricción de no negatividad requeriría usar la parte positiva de las coordenadas de confianza en la resolución. No se ha elegido esta variante ni se modifica aquí el orden aprobado. Aclarar en particular cómo tratar una anulación del grupo que solo aparece tras proyectar y cómo congelar momentos de entradas recortadas.
+- Proyección de confianzas después del proximal uniforme: distinguir el subproblema proximal sin restricciones de su composición con la proyección; sigue pendiente aclarar la anulación del grupo que solo aparece tras proyectar. Mantener las entradas recortadas fuera de futuras actualizaciones. No hacen falta momentos ni tolerancia de bisección.
 - Especificación de pruebas: contrastar backward manual con diferencias finitas, simetría, conservación de media inmanente, caso de neurona única, anulación proximal, normalización de KDE tras hibernación y diagnóstico de inestabilidad. Estos son controles de verificación propuestos, no resultados experimentales ni cambios implementados.
 
 ## 30. Ideario y frontera de implementación
 
 Conservar, sin implementar ahora, los mecanismos de las secciones históricas: reactivación lateral de conexiones (prioridad alta, primera opción), reactivación lateral neuronal (alta, posterior a conexiones), aprendizaje auxiliar de hibernadas, experiencia actual/histórica y sus asociaciones, conocimiento, influencia comunicativa, liderazgo y meritocracia, confianzas asimétricas, congregaciones persistentes y pulso, excitación continuada, tamaño de paso inmanente adaptativo, simulacros como alternativa futura y lector histórico. No introducir ANN individuales ni mecanismos adicionales para corregir por anticipado las limitaciones observadas.
+
+### Ideario futuro — Adam y minilotes (prioridad baja, 25-11-2026)
+
+- **Adam: prioridad baja.** Pospuesto expresamente por el autor. No mantenerlo como optimizador activo ni desarrollar variantes adicionales en esta versión.
+- **Minilotes: prioridad baja.** Pospuestos expresamente por el autor. El prototipo empleará el gradiente medio del conjunto completo de entrenamiento, con una actualización por época.
+
+La formulación histórica de Adam y del proximal diagonal asociado se conserva en la [revisión anterior de §26](https://github.com/meirame/DRANN/blob/091ee090345e87d7d0eb98f2910bfa4535c615f2/docs/DRANN_TEORIA_CONSOLIDADA_2026-11-21.md#26-adam-minilotes-y-group-lasso). Solo reconsiderarlos si el estudio del descenso de gradiente clásico lo justifica y el autor lo aprueba. No confundir esta retirada con la eliminación del backward analítico.
 
 ### Ideario futuro — MORFEO (25-11-2026)
 
